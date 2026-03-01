@@ -6,7 +6,7 @@ import FeatureCard from './components/FeatureCard';
 const features = [
   {
     title: 'Draft Board',
-    description: 'View and manage the live draft board in real time.',
+    description: 'View and manage the live draft board in real time',
     buttonText: 'Go to Draft',
     href: '/draft',
   },
@@ -17,10 +17,11 @@ const features = [
     href: '/injuries',
   },
   {
-    title: 'My Team',
-    description: 'Track your roster and category strengths.',
-    buttonText: 'View Team',
-    href: '/team',
+    title: 'Mock Draft',
+    description:
+      'Simulate through mock drafts to prepare for your real draft day',
+    buttonText: 'View Mock Draft',
+    href: '/mock-draft',
   },
   {
     title: 'Depth Charts',
@@ -30,7 +31,7 @@ const features = [
   },
   {
     title: 'League Setup',
-    description: 'Configure league settings and scoring format.',
+    description: 'Configure league settings and scoring format',
     buttonText: 'Setup League',
     href: '/league',
   },
