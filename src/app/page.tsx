@@ -4,7 +4,6 @@ import Navbar from '@/features/Home/components/Navbar';
 export default function Page() {
   return (
     <>
-      <Navbar />
       <HomePage />
     </>
   );

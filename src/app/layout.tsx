@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Providers } from './providers';
 import { ErrorBoundary } from '@/shared/components/feedback/error-boundary';
 import './globals.css';
+import Navbar from '@/features/Home/components/Navbar';
 
 export const metadata: Metadata = {
   title: 'Draft Kit UI',
@@ -17,7 +18,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ErrorBoundary>
-          <Providers>{children}</Providers>
+          <Providers>
+            <Navbar />
+            {children}
+          </Providers>
         </ErrorBoundary>
       </body>
     </html>
