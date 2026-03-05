@@ -10,14 +10,10 @@ type NavbarButtonProps = {
 
 export default function NavbarButton({ label, href }: NavbarButtonProps) {
   return (
-    <Button
-      as={Link}
-      href={href}
-      variant="ghost"
-      color="green.600"
-      _hover={{ bg: 'green.50' }}
-    >
-      {label}
-    </Button>
+    <Link href={href}>
+      <Button variant="ghost" color="green.600" _hover={{ bg: 'green.50' }}>
+        {label}
+      </Button>
+    </Link>
   );
 }

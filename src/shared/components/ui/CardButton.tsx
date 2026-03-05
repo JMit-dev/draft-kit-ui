@@ -10,14 +10,10 @@ type CardButtonProps = {
 
 export default function CardButton({ label, href }: CardButtonProps) {
   return (
-    <Button
-      as={Link}
-      href={href}
-      bg="green.600"
-      color="white"
-      _hover={{ bg: 'green.700' }}
-    >
-      {label}
-    </Button>
+    <Link href={href}>
+      <Button bg="green.600" color="white" _hover={{ bg: 'green.700' }}>
+        {label}
+      </Button>
+    </Link>
   );
 }
