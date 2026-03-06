@@ -33,7 +33,7 @@ const features = [
     title: 'League Setup',
     description: 'Configure league settings and scoring format',
     buttonText: 'Setup League',
-    href: '/league',
+    href: '/leagues',
   },
   {
     title: 'Player Stats',
