@@ -10,8 +10,10 @@ interface LeaguesResponse {
   };
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 export async function fetchLeagues(): Promise<LeaguesResponse> {
-  const res = await fetch('http://localhost:3001/api/leagues');
+  const res = await fetch(`${API_URL}/api/leagues`);
   if (!res.ok) throw new Error('Failed to fetch leagues');
 
   return res.json();
