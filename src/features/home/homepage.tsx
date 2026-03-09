@@ -11,10 +11,10 @@ const features = [
     href: '/draft',
   },
   {
-    title: 'Injury Report',
-    description: 'Browse current injury status of all players',
-    buttonText: 'View Reports',
-    href: '/injuries',
+    title: 'Player Ranking',
+    description: 'Ranking and search of all players',
+    buttonText: 'View Players',
+    href: '/rankings',
   },
   {
     title: 'Mock Draft',
