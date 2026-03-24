@@ -6,8 +6,8 @@ import CreateLeagueModal from './CreateLeagueModal';
 // mock hook
 const mutateAsyncMock = vi.fn();
 
-vi.mock('../hooks/useCreateLeague', () => ({
-  useCreateLeague: () => ({
+vi.mock('../hooks/useUpsertLeague', () => ({
+  useUpsertLeague: () => ({
     mutateAsync: mutateAsyncMock,
     isPending: false,
     isError: false,
@@ -83,7 +83,8 @@ describe('CreateLeagueModal', () => {
       expect(mutateAsyncMock).toHaveBeenCalledTimes(1);
     });
 
-    const payload = mutateAsyncMock.mock.calls[0][0];
+    const args = mutateAsyncMock.mock.calls[0][0];
+    const payload = args.input;
 
     expect(payload.name).toBe('Test League');
     expect(payload.teams).toBe(12);
