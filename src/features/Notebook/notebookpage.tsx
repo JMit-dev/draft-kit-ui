@@ -7,14 +7,18 @@ import NotebookWorkspace from './components/NotebookWorkspace';
 
 export default function NotebookPage() {
   const [notebooks, setNotebooks] = useState<
-    Array<{ id: number; name: string }>
+    Array<{ id: number; name: string; content: string }>
   >([]);
   const [selectedNotebookId, setSelectedNotebookId] = useState<number | null>(
     null,
   );
 
   const addNotebook = () => {
-    const newNotebook = { id: Date.now(), name: 'New Notebook' };
+    const newNotebook = {
+      id: Date.now(),
+      name: 'New Notebook',
+      content: '',
+    };
 
     setNotebooks((current) => [...current, newNotebook]);
     setSelectedNotebookId(newNotebook.id);
@@ -28,6 +32,14 @@ export default function NotebookPage() {
     );
   };
 
+  const updateNotebookContent = (id: number, content: string) => {
+    setNotebooks((current) =>
+      current.map((notebook) =>
+        notebook.id === id ? { ...notebook, content } : notebook,
+      ),
+    );
+  };
+
   const selectedNotebook =
     notebooks.find((notebook) => notebook.id === selectedNotebookId) ?? null;
 
@@ -35,7 +47,10 @@ export default function NotebookPage() {
     <Box p={8}>
       <Flex gap={8} align="stretch" minH="calc(100vh - 140px)">
         <NotebookWorkspace
+          selectedNotebookId={selectedNotebook?.id ?? null}
           selectedNotebookName={selectedNotebook?.name ?? null}
+          selectedNotebookContent={selectedNotebook?.content ?? ''}
+          onNotebookContentChange={updateNotebookContent}
           onCloseNotebook={() => setSelectedNotebookId(null)}
         />
         <NotebookListPanel
