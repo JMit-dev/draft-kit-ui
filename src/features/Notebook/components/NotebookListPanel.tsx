@@ -1,28 +1,52 @@
-import { Box, Heading, Text, VStack } from '@chakra-ui/react';
+'use client';
 
-export default function NotebookListPanel() {
+import { Box, Button, Flex, Heading, VStack } from '@chakra-ui/react';
+import NotebookListItem from './NotebookListItem';
+
+type Notebook = {
+  id: number;
+  name: string;
+};
+
+type NotebookListPanelProps = {
+  notebooks: Notebook[];
+  selectedNotebookId: number | null;
+  onAddNotebook: () => void;
+  onRenameNotebook: (id: number, name: string) => void;
+  onOpenNotebook: (id: number) => void;
+};
+
+export default function NotebookListPanel({
+  notebooks,
+  selectedNotebookId,
+  onAddNotebook,
+  onRenameNotebook,
+  onOpenNotebook,
+}: NotebookListPanelProps) {
   return (
     <Box flex="1">
-      <Heading mb={6}>Notebooks per game</Heading>
+      <Flex mb={6} align="center" justify="space-between">
+        <Heading>Notebooks per game</Heading>
+        <Button
+          bg="green.600"
+          color="white"
+          _hover={{ bg: 'green.700' }}
+          onClick={onAddNotebook}
+        >
+          +
+        </Button>
+      </Flex>
 
       <VStack align="stretch" spacing={5}>
-        <Box
-          w="100%"
-          minH="88px"
-          px={6}
-          borderRadius="md"
-          border="2px solid"
-          borderColor="gray.200"
-          bg="white"
-          display="flex"
-          alignItems="center"
-          _hover={{ bg: 'gray.50', borderColor: 'gray.400' }}
-          transition="all 0.15s ease"
-        >
-          <Text fontSize="lg" fontWeight="semibold" color="gray.700">
-            Notebook list goes here
-          </Text>
-        </Box>
+        {notebooks.map((notebook) => (
+          <NotebookListItem
+            key={notebook.id}
+            notebook={notebook}
+            isSelected={notebook.id === selectedNotebookId}
+            onRename={onRenameNotebook}
+            onOpen={onOpenNotebook}
+          />
+        ))}
       </VStack>
     </Box>
   );
