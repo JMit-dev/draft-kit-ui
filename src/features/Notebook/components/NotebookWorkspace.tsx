@@ -6,14 +6,18 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import { Box, Button, Text, Textarea } from '@chakra-ui/react';
+import { Box, Button, Flex, Text, Textarea } from '@chakra-ui/react';
+import TopPlayersPanel from './TopPlayersPanel';
 
 type NotebookWorkspaceProps = {
   selectedNotebookId: number | null;
   selectedNotebookName: string | null;
   selectedNotebookContent: string;
   onNotebookContentChange: (id: number, content: string) => void;
+  onPlayerContentChange: (playerName: string, content: string) => void;
+  selectedPlayerName: string | null;
   onCloseNotebook: () => void;
+  onOpenPlayerNotebook: (playerName: string) => void;
 };
 
 export default function NotebookWorkspace({
@@ -21,7 +25,10 @@ export default function NotebookWorkspace({
   selectedNotebookName,
   selectedNotebookContent,
   onNotebookContentChange,
+  onPlayerContentChange,
+  selectedPlayerName,
   onCloseNotebook,
+  onOpenPlayerNotebook,
 }: NotebookWorkspaceProps) {
   const [windowRect, setWindowRect] = useState({
     x: 0,
@@ -161,7 +168,18 @@ export default function NotebookWorkspace({
         border="2px solid"
         borderColor="gray.200"
         bg="white"
-      />
+        p={6}
+      >
+        <Flex direction="column" gap={6} h="100%">
+          <TopPlayersPanel onOpenPlayer={onOpenPlayerNotebook} />
+          <Box
+            flex="1"
+            borderRadius="md"
+            border="1px dashed"
+            borderColor="gray.200"
+          />
+        </Flex>
+      </Box>
 
       {selectedNotebookName ? (
         <Box position="fixed" inset={0} bg="blackAlpha.200" zIndex={10}>
@@ -210,6 +228,17 @@ export default function NotebookWorkspace({
                     selectedNotebookId,
                     event.target.value,
                   )
+                }
+                placeholder="Write notes here..."
+              />
+            ) : selectedPlayerName ? (
+              <Textarea
+                h={`calc(${windowRect.height}px - 88px)`}
+                minH="140px"
+                resize="none"
+                value={selectedNotebookContent}
+                onChange={(event) =>
+                  onPlayerContentChange(selectedPlayerName, event.target.value)
                 }
                 placeholder="Write notes here..."
               />

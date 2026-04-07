@@ -12,6 +12,10 @@ export default function NotebookPage() {
   const [selectedNotebookId, setSelectedNotebookId] = useState<number | null>(
     null,
   );
+  const [playerNotes, setPlayerNotes] = useState<Record<string, string>>({});
+  const [selectedPlayerName, setSelectedPlayerName] = useState<string | null>(
+    null,
+  );
 
   const addNotebook = () => {
     const newNotebook = {
@@ -21,6 +25,7 @@ export default function NotebookPage() {
     };
 
     setNotebooks((current) => [...current, newNotebook]);
+    setSelectedPlayerName(null);
     setSelectedNotebookId(newNotebook.id);
   };
 
@@ -40,25 +45,50 @@ export default function NotebookPage() {
     );
   };
 
+  const updatePlayerContent = (playerName: string, content: string) => {
+    setPlayerNotes((current) => ({
+      ...current,
+      [playerName]: content,
+    }));
+  };
+
+  const openPlayerNotebook = (playerName: string) => {
+    setSelectedNotebookId(null);
+    setSelectedPlayerName(playerName);
+  };
+
   const selectedNotebook =
     notebooks.find((notebook) => notebook.id === selectedNotebookId) ?? null;
+  const selectedItemName = selectedPlayerName ?? selectedNotebook?.name ?? null;
+  const selectedItemContent = selectedPlayerName
+    ? (playerNotes[selectedPlayerName] ?? '')
+    : (selectedNotebook?.content ?? '');
 
   return (
     <Box p={8}>
       <Flex gap={8} align="stretch" minH="calc(100vh - 140px)">
         <NotebookWorkspace
           selectedNotebookId={selectedNotebook?.id ?? null}
-          selectedNotebookName={selectedNotebook?.name ?? null}
-          selectedNotebookContent={selectedNotebook?.content ?? ''}
+          selectedNotebookName={selectedItemName}
+          selectedNotebookContent={selectedItemContent}
           onNotebookContentChange={updateNotebookContent}
-          onCloseNotebook={() => setSelectedNotebookId(null)}
+          onPlayerContentChange={updatePlayerContent}
+          selectedPlayerName={selectedPlayerName}
+          onCloseNotebook={() => {
+            setSelectedNotebookId(null);
+            setSelectedPlayerName(null);
+          }}
+          onOpenPlayerNotebook={openPlayerNotebook}
         />
         <NotebookListPanel
           notebooks={notebooks}
           selectedNotebookId={selectedNotebookId}
           onAddNotebook={addNotebook}
           onRenameNotebook={renameNotebook}
-          onOpenNotebook={setSelectedNotebookId}
+          onOpenNotebook={(id) => {
+            setSelectedPlayerName(null);
+            setSelectedNotebookId(id);
+          }}
         />
       </Flex>
     </Box>
