@@ -60,9 +60,9 @@ describe('upsertLeague', () => {
       name: 'Budget League',
       totalBudget: 260,
       taken_players: [
-        ['player-1', 'team-a', 25],
-        ['player-2', 'team-a', 10],
-        ['player-3', 'team-b', 40],
+        ['player-1', 'team-a', 'C-0', 25],
+        ['player-2', 'team-a', '1B-0', 10],
+        ['player-3', 'team-b', 'C-0', 40],
       ],
       teams: [
         ['team-a', 'Alpha', 0],

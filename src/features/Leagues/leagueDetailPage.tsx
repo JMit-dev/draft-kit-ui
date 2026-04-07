@@ -105,29 +105,40 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   function updateTeamTakenPlayers(
     currentTakenPlayers: TakenPlayer[],
     teamId: string,
-    prices: number[],
+    rows: Array<{ rowId: string; playerName: string; price: number }>,
   ): TakenPlayer[] {
-    let teamPlayerIndex = 0;
+    const rowsBySlot = new Map(rows.map((row) => [row.rowId, row]));
+    const updatedTakenPlayers: TakenPlayer[] = [];
+    const handledSlots = new Set<string>();
 
-    const updatedTakenPlayers = currentTakenPlayers.map((takenPlayer) => {
-      const [playerId, takenPlayerTeamId, price] = takenPlayer;
-      if (takenPlayerTeamId !== teamId) return takenPlayer;
+    currentTakenPlayers.forEach((takenPlayer) => {
+      const [playerId, takenPlayerTeamId, positionSlot] = takenPlayer;
+      if (takenPlayerTeamId !== teamId) {
+        updatedTakenPlayers.push(takenPlayer);
+        return;
+      }
 
-      const nextPrice = prices[teamPlayerIndex] ?? price;
-      teamPlayerIndex += 1;
-      return [playerId, teamId, nextPrice];
+      const matchingRow = rowsBySlot.get(positionSlot);
+      if (!matchingRow) {
+        updatedTakenPlayers.push(takenPlayer);
+        return;
+      }
+
+      handledSlots.add(positionSlot);
+      updatedTakenPlayers.push([
+        playerId,
+        teamId,
+        positionSlot,
+        matchingRow.price,
+      ]);
     });
 
-    const existingTeamPlayers = currentTakenPlayers.filter(
-      ([, takenPlayerTeamId]) => takenPlayerTeamId === teamId,
-    );
+    rows.forEach((row) => {
+      if (handledSlots.has(row.rowId) || row.price <= 0) return;
+      updatedTakenPlayers.push(['', teamId, row.rowId, row.price]);
+    });
 
-    const appendedRows = prices
-      .slice(existingTeamPlayers.length)
-      .filter((price) => price > 0)
-      .map((price) => ['', teamId, price] as TakenPlayer);
-
-    return [...updatedTakenPlayers, ...appendedRows];
+    return updatedTakenPlayers;
   }
 
   async function saveLeagueChanges(
@@ -242,7 +253,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
                     takenPlayers={takenPlayersForTeam}
                     startingBudget={league.totalBudget ?? 0}
                     isSaving={upsertLeagueMutation.isPending}
-                    onSaveChanges={({ teamName, prices }) => {
+                    onSaveChanges={({ teamName, rows }) => {
                       const nextTeams = displayTeams.map((currentTeam) =>
                         currentTeam[0] === teamId
                           ? [currentTeam[0], teamName, currentTeam[2]]
@@ -251,7 +262,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
                       const nextTakenPlayers = updateTeamTakenPlayers(
                         editedTakenPlayers,
                         teamId,
-                        prices,
+                        rows,
                       );
                       setEditedTeams(nextTeams);
                       setEditedTakenPlayers(nextTakenPlayers);

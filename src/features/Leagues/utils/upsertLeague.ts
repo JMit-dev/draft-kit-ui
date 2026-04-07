@@ -29,7 +29,7 @@ function calculateCurrentBudget(
   takenPlayers: TakenPlayer[],
   teamId: string,
 ): number {
-  const spent = takenPlayers.reduce((sum, [, takenTeamId, price]) => {
+  const spent = takenPlayers.reduce((sum, [, takenTeamId, , price]) => {
     if (takenTeamId !== teamId) return sum;
     return sum + price;
   }, 0);

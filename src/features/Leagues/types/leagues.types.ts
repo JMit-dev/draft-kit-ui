@@ -12,7 +12,12 @@ export type RosterSlots = {
   BENCH: number;
 };
 
-export type TakenPlayer = [playerId: string, teamId: string, price: number];
+export type TakenPlayer = [
+  playerId: string,
+  teamId: string,
+  positionSlot: string,
+  price: number,
+];
 
 export type LeagueTeam = [
   teamId: string,

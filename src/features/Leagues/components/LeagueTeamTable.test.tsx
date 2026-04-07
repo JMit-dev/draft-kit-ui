@@ -24,9 +24,9 @@ describe('LeagueTeamTable', () => {
             BENCH: 0,
           }}
           takenPlayers={[
-            ['Adley Rutschman', 'team-1', 20],
-            ['Freddie Freeman', 'team-1', 35],
-            ['Julio Rodriguez', 'team-1', 40],
+            ['Adley Rutschman', 'team-1', 'C-0', 20],
+            ['Freddie Freeman', 'team-1', '1B-0', 35],
+            ['Julio Rodriguez', 'team-1', 'OF-0', 40],
           ]}
         />
       </ChakraProvider>,
@@ -64,7 +64,7 @@ describe('LeagueTeamTable', () => {
             UTIL: 0,
             BENCH: 1,
           }}
-          takenPlayers={[['William Contreras', 'team-2', 15]]}
+          takenPlayers={[['William Contreras', 'team-2', 'C-0', 15]]}
         />
       </ChakraProvider>,
     );
@@ -95,8 +95,8 @@ describe('LeagueTeamTable', () => {
             BENCH: 0,
           }}
           takenPlayers={[
-            ['Player A', 'team-3', 10],
-            ['Player B', 'team-3', 20],
+            ['Player A', 'team-3', 'C-0', 10],
+            ['Player B', 'team-3', '1B-0', 20],
           ]}
         />
       </ChakraProvider>,
@@ -129,8 +129,8 @@ describe('LeagueTeamTable', () => {
             BENCH: 0,
           }}
           takenPlayers={[
-            ['Player A', 'team-4', 10],
-            ['Player B', 'team-4', 20],
+            ['Player A', 'team-4', 'C-0', 10],
+            ['Player B', 'team-4', '1B-0', 20],
           ]}
         />
       </ChakraProvider>,
@@ -164,7 +164,7 @@ describe('LeagueTeamTable', () => {
             UTIL: 0,
             BENCH: 0,
           }}
-          takenPlayers={[['Player A', 'team-5', 10]]}
+          takenPlayers={[['Player A', 'team-5', 'C-0', 10]]}
           onSaveChanges={onSaveChanges}
         />
       </ChakraProvider>,
@@ -179,7 +179,42 @@ describe('LeagueTeamTable', () => {
 
     expect(onSaveChanges).toHaveBeenCalledWith({
       teamName: 'Echo Updated',
-      prices: [15],
+      rows: [{ rowId: 'C-0', playerName: 'Player A', price: 15 }],
     });
+  });
+
+  it('keeps prices attached to their position slots instead of array order', () => {
+    render(
+      <ChakraProvider>
+        <LeagueTeamTable
+          team={['team-6', 'Foxtrot', 0]}
+          startingBudget={260}
+          rosterSlots={{
+            C: 0,
+            '1B': 1,
+            '2B': 0,
+            '3B': 0,
+            SS: 0,
+            OF: 1,
+            DH: 0,
+            SP: 0,
+            RP: 0,
+            UTIL: 0,
+            BENCH: 0,
+          }}
+          takenPlayers={[
+            ['Catcher Player', 'team-6', 'C-0', 100],
+            ['First Base Player', 'team-6', '1B-0', 35],
+            ['Outfielder', 'team-6', 'OF-0', 22],
+          ]}
+        />
+      </ChakraProvider>,
+    );
+
+    expect(screen.getByText('First Base Player')).toBeTruthy();
+    expect(screen.getByDisplayValue('35')).toBeTruthy();
+    expect(screen.getByText('Outfielder')).toBeTruthy();
+    expect(screen.getByDisplayValue('22')).toBeTruthy();
+    expect(screen.queryByDisplayValue('100')).toBeNull();
   });
 });

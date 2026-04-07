@@ -70,8 +70,8 @@ describe('LeagueDetailPage', () => {
         ['team-2', 'Beta', 215],
       ],
       taken_players: [
-        ['player-1', 'team-1', 20],
-        ['player-2', 'team-2', 45],
+        ['player-1', 'team-1', 'C-0', 20],
+        ['player-2', 'team-2', 'C-0', 45],
       ],
       totalBudget: 260,
       draftType: 'auction',
@@ -188,8 +188,8 @@ describe('LeagueDetailPage', () => {
       ['team-2', 'Beta', 215],
     ]);
     expect(args.input.takenPlayers).toEqual([
-      ['player-1', 'team-1', 30],
-      ['player-2', 'team-2', 45],
+      ['player-1', 'team-1', 'C-0', 30],
+      ['player-2', 'team-2', 'C-0', 45],
     ]);
   });
 
@@ -232,6 +232,47 @@ describe('LeagueDetailPage', () => {
     });
 
     const args = upsertMutateAsyncMock.mock.calls[0][0];
-    expect(args.input.takenPlayers).toEqual([['', 'team-1', 25]]);
+    expect(args.input.takenPlayers).toEqual([['', 'team-1', 'C-0', 25]]);
+  });
+
+  it('keeps an edited price attached to its original slot after roster changes', () => {
+    mockLeague = {
+      _id: 'league-777',
+      externalId: 'custom-league-777',
+      name: 'Shifted League',
+      teams: [['team-1', 'Alpha', 203]],
+      taken_players: [
+        ['Catcher Player', 'team-1', 'C-0', 100],
+        ['First Base Player', 'team-1', '1B-0', 35],
+        ['Outfielder', 'team-1', 'OF-0', 22],
+      ],
+      totalBudget: 260,
+      draftType: 'auction',
+      rosterSlots: {
+        C: 0,
+        '1B': 1,
+        '2B': 0,
+        '3B': 0,
+        SS: 0,
+        OF: 1,
+        DH: 0,
+        SP: 0,
+        RP: 0,
+        UTIL: 0,
+        BENCH: 0,
+      },
+    };
+
+    render(
+      <ChakraProvider>
+        <LeagueDetailPage leagueId="league-777" />
+      </ChakraProvider>,
+    );
+
+    expect(screen.getByText('First Base Player')).toBeTruthy();
+    expect(screen.getByDisplayValue('35')).toBeTruthy();
+    expect(screen.getByText('Outfielder')).toBeTruthy();
+    expect(screen.getByDisplayValue('22')).toBeTruthy();
+    expect(screen.queryByDisplayValue('100')).toBeNull();
   });
 });

@@ -27,7 +27,14 @@ type LeagueTeamTableProps = {
   rosterSlots?: RosterSlots;
   takenPlayers?: TakenPlayer[];
   startingBudget: number;
-  onSaveChanges?: (payload: { teamName: string; prices: number[] }) => void;
+  onSaveChanges?: (payload: {
+    teamName: string;
+    rows: Array<{
+      rowId: string;
+      playerName: string;
+      price: number;
+    }>;
+  }) => void;
   isSaving?: boolean;
 };
 
@@ -42,18 +49,18 @@ function buildTeamRows(
   rosterSlots: RosterSlots,
   takenPlayers: TakenPlayer[],
 ): TeamTableRow[] {
-  let playerIndex = 0;
-
   return ROSTER_POSITIONS.flatMap((position) =>
     Array.from({ length: rosterSlots[position] }, (_, slotIndex) => {
-      const player = takenPlayers[playerIndex];
-      playerIndex += 1;
+      const rowId = `${position}-${slotIndex}`;
+      const player = takenPlayers.find(
+        ([, , positionSlot]) => positionSlot === rowId,
+      );
 
       return {
-        rowId: `${position}-${slotIndex}`,
+        rowId,
         position,
         playerName: player?.[0] ?? '',
-        price: String(player?.[2] ?? 0),
+        price: String(player?.[3] ?? 0),
       };
     }),
   );
@@ -121,7 +128,11 @@ export default function LeagueTeamTable({
   function handleSaveChanges() {
     onSaveChanges?.({
       teamName: localTeamName.trim() || teamName,
-      prices: rows.map((row) => parsePrice(row.price)),
+      rows: rows.map((row) => ({
+        rowId: row.rowId,
+        playerName: row.playerName,
+        price: parsePrice(row.price),
+      })),
     });
   }
 
