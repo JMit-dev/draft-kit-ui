@@ -57,6 +57,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   const cancelRef = useRef<HTMLButtonElement>(null);
   const deleteLeagueMutation = useDeleteLeague();
   const upsertLeagueMutation = useUpsertLeague();
+  const [editedTeams, setEditedTeams] = useState<LeagueTeam[]>([]);
   const [editedTakenPlayers, setEditedTakenPlayers] = useState<TakenPlayer[]>(
     [],
   );
@@ -64,10 +65,18 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
 
   useEffect(() => {
     if (!league) {
+      setEditedTeams([]);
       setEditedTakenPlayers([]);
       return;
     }
 
+    setEditedTeams(
+      buildDisplayTeams(
+        league.teams,
+        league.teams?.length ?? parseTeamsFromDescription(league.description),
+        league.totalBudget ?? 0,
+      ),
+    );
     const nextTakenPlayers = league.taken_players ?? [];
     setEditedTakenPlayers(nextTakenPlayers);
   }, [league]);
@@ -78,11 +87,10 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   const teamCount =
     league.teams?.length ?? parseTeamsFromDescription(league.description);
   const leagueIdToDelete = league._id;
-  const displayTeams = buildDisplayTeams(
-    league.teams,
-    teamCount,
-    league.totalBudget ?? 0,
-  );
+  const displayTeams =
+    editedTeams.length > 0
+      ? editedTeams
+      : buildDisplayTeams(league.teams, teamCount, league.totalBudget ?? 0);
 
   async function handleDelete() {
     try {
@@ -122,7 +130,10 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
     return [...updatedTakenPlayers, ...appendedRows];
   }
 
-  async function saveTakenPlayers(nextTakenPlayers: TakenPlayer[]) {
+  async function saveLeagueChanges(
+    nextTeams: LeagueTeam[],
+    nextTakenPlayers: TakenPlayer[],
+  ) {
     try {
       await upsertLeagueMutation.mutateAsync({
         input: {
@@ -144,6 +155,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
           },
           totalBudget: league.totalBudget ?? 0,
           takenPlayers: nextTakenPlayers,
+          teamsData: nextTeams,
         },
         existingLeague: league,
       });
@@ -230,14 +242,20 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
                     takenPlayers={takenPlayersForTeam}
                     startingBudget={league.totalBudget ?? 0}
                     isSaving={upsertLeagueMutation.isPending}
-                    onSaveChanges={(prices) => {
+                    onSaveChanges={({ teamName, prices }) => {
+                      const nextTeams = displayTeams.map((currentTeam) =>
+                        currentTeam[0] === teamId
+                          ? [currentTeam[0], teamName, currentTeam[2]]
+                          : currentTeam,
+                      ) as LeagueTeam[];
                       const nextTakenPlayers = updateTeamTakenPlayers(
                         editedTakenPlayers,
                         teamId,
                         prices,
                       );
+                      setEditedTeams(nextTeams);
                       setEditedTakenPlayers(nextTakenPlayers);
-                      void saveTakenPlayers(nextTakenPlayers);
+                      void saveLeagueChanges(nextTeams, nextTakenPlayers);
                     }}
                   />
                 );

@@ -5,7 +5,6 @@ import {
   Box,
   Button,
   Flex,
-  Heading,
   Input,
   Table,
   TableContainer,
@@ -28,7 +27,7 @@ type LeagueTeamTableProps = {
   rosterSlots?: RosterSlots;
   takenPlayers?: TakenPlayer[];
   startingBudget: number;
-  onSaveChanges?: (prices: number[]) => void;
+  onSaveChanges?: (payload: { teamName: string; prices: number[] }) => void;
   isSaving?: boolean;
 };
 
@@ -86,17 +85,19 @@ export default function LeagueTeamTable({
     () => buildTeamRows(rosterSlots, takenPlayers),
     [rosterSlots, takenPlayers],
   );
+  const [localTeamName, setLocalTeamName] = useState(teamName);
   const [localRows, setLocalRows] = useState(propRows);
 
   useEffect(() => {
+    setLocalTeamName(teamName);
     setLocalRows(propRows);
-  }, [propRows]);
+  }, [propRows, teamName]);
 
   const rows = localRows;
   const currentBudget = calculateCurrentBudgetFromRows(startingBudget, rows);
-  const isDirty = rows.some(
-    (row, index) => row.price !== propRows[index]?.price,
-  );
+  const isDirty =
+    localTeamName !== teamName ||
+    rows.some((row, index) => row.price !== propRows[index]?.price);
 
   function handleLocalPriceChange(rowIndex: number, value: string) {
     if (value !== '' && !/^\d+$/.test(value)) return;
@@ -118,7 +119,10 @@ export default function LeagueTeamTable({
   }
 
   function handleSaveChanges() {
-    onSaveChanges?.(rows.map((row) => parsePrice(row.price)));
+    onSaveChanges?.({
+      teamName: localTeamName.trim() || teamName,
+      prices: rows.map((row) => parsePrice(row.price)),
+    });
   }
 
   return (
@@ -141,7 +145,15 @@ export default function LeagueTeamTable({
         bg="gray.50"
         borderBottomWidth="1px"
       >
-        <Heading size="md">{teamName}</Heading>
+        <Input
+          value={localTeamName}
+          onChange={(e) => setLocalTeamName(e.target.value)}
+          size="sm"
+          maxW="180px"
+          fontWeight="bold"
+          bg="white"
+          isDisabled={isSaving}
+        />
         <Text fontWeight="semibold" color="gray.700">
           Budget: ${currentBudget}
         </Text>

@@ -32,7 +32,7 @@ describe('LeagueTeamTable', () => {
       </ChakraProvider>,
     );
 
-    expect(screen.getByText('Alpha')).toBeTruthy();
+    expect(screen.getByDisplayValue('Alpha')).toBeTruthy();
     expect(screen.getByText('Budget: $165')).toBeTruthy();
     expect(screen.getByText('C')).toBeTruthy();
     expect(screen.getByText('1B')).toBeTruthy();
@@ -172,8 +172,14 @@ describe('LeagueTeamTable', () => {
 
     const input = screen.getByDisplayValue('10');
     fireEvent.change(input, { target: { value: '15' } });
+    fireEvent.change(screen.getByDisplayValue('Echo'), {
+      target: { value: 'Echo Updated' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
-    expect(onSaveChanges).toHaveBeenCalledWith([15]);
+    expect(onSaveChanges).toHaveBeenCalledWith({
+      teamName: 'Echo Updated',
+      prices: [15],
+    });
   });
 });

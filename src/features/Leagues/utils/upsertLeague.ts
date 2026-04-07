@@ -73,7 +73,7 @@ export async function upsertLeague(
     input.teams,
     input.totalBudget,
     takenPlayers,
-    existingLeague?.teams,
+    input.teamsData ?? existingLeague?.teams,
   );
 
   return apiClient.post<CreateLeagueResponse>('/api/leagues', {

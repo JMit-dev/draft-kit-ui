@@ -44,6 +44,7 @@ export type CreateLeagueInput = {
   rosterSlots: RosterSlots;
   totalBudget: number;
   takenPlayers?: TakenPlayer[];
+  teamsData?: LeagueTeam[];
 };
 
 export interface CreateLeagueResponse {

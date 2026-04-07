@@ -120,8 +120,8 @@ describe('LeagueDetailPage', () => {
       </ChakraProvider>,
     );
 
-    expect(screen.getByText('Alpha')).toBeTruthy();
-    expect(screen.getByText('Beta')).toBeTruthy();
+    expect(screen.getByDisplayValue('Alpha')).toBeTruthy();
+    expect(screen.getByDisplayValue('Beta')).toBeTruthy();
     expect(screen.getByText('Budget: $240')).toBeTruthy();
     expect(screen.getByText('Budget: $215')).toBeTruthy();
     expect(screen.getByText('player-1')).toBeTruthy();
@@ -157,9 +157,9 @@ describe('LeagueDetailPage', () => {
       </ChakraProvider>,
     );
 
-    expect(screen.getByText('Team 1')).toBeTruthy();
-    expect(screen.getByText('Team 2')).toBeTruthy();
-    expect(screen.getByText('Team 3')).toBeTruthy();
+    expect(screen.getByDisplayValue('Team 1')).toBeTruthy();
+    expect(screen.getByDisplayValue('Team 2')).toBeTruthy();
+    expect(screen.getByDisplayValue('Team 3')).toBeTruthy();
   });
 
   it('saves edited prices back to the league object from a team table save button', async () => {
@@ -171,6 +171,9 @@ describe('LeagueDetailPage', () => {
 
     const priceInputs = screen.getAllByRole('spinbutton') as HTMLInputElement[];
     fireEvent.change(priceInputs[0], { target: { value: '30' } });
+    fireEvent.change(screen.getByDisplayValue('Alpha'), {
+      target: { value: 'Gamma' },
+    });
     fireEvent.click(
       screen.getAllByRole('button', { name: /save changes/i })[0],
     );
@@ -180,6 +183,10 @@ describe('LeagueDetailPage', () => {
     });
 
     const args = upsertMutateAsyncMock.mock.calls[0][0];
+    expect(args.input.teamsData).toEqual([
+      ['team-1', 'Gamma', 240],
+      ['team-2', 'Beta', 215],
+    ]);
     expect(args.input.takenPlayers).toEqual([
       ['player-1', 'team-1', 30],
       ['player-2', 'team-2', 45],
