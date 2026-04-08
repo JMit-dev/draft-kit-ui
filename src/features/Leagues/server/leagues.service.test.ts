@@ -37,6 +37,10 @@ describe('LeaguesService', () => {
   beforeAll(async () => {
     loadLocalMongoEnv();
     await connectDb();
+    await LeagueModel.collection.createIndex(
+      { name: 'text', description: 'text' },
+      { name: 'name_description_text' },
+    );
   });
 
   beforeEach(async () => {
