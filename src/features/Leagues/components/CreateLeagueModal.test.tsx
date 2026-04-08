@@ -35,6 +35,7 @@ describe('UpsertLeagueModal (create)', () => {
     expect(screen.getByLabelText(/league name/i)).toBeTruthy();
     expect(screen.getByLabelText(/# of teams/i)).toBeTruthy();
     expect(screen.getByLabelText(/draft type/i)).toBeTruthy();
+    expect(screen.getByLabelText(/starting budget/i)).toBeTruthy();
   });
 
   it('shows default values', () => {
@@ -43,7 +44,12 @@ describe('UpsertLeagueModal (create)', () => {
     const teamsInput = screen.getByLabelText(/# of teams/i) as HTMLInputElement;
     expect(teamsInput.value).toBe('12');
 
-    const cInput = screen.getAllByRole('spinbutton')[1] as HTMLInputElement;
+    const budgetInput = screen.getByLabelText(
+      /starting budget/i,
+    ) as HTMLInputElement;
+    expect(budgetInput.value).toBe('260');
+
+    const cInput = screen.getByLabelText(/^C$/i) as HTMLInputElement;
     expect(cInput.value).toBe('1');
   });
 
@@ -89,6 +95,7 @@ describe('UpsertLeagueModal (create)', () => {
     expect(payload.name).toBe('Test League');
     expect(payload.teams).toBe(12);
     expect(payload.draftType).toBe('auction');
+    expect(payload.totalBudget).toBe(260);
 
     await waitFor(() => {
       const updatedNameInput = screen.getByLabelText(
@@ -107,5 +114,26 @@ describe('UpsertLeagueModal (create)', () => {
     fireEvent.change(cInput, { target: { value: '' } });
 
     expect(cInput.value).toBe('');
+  });
+
+  it('submits an updated starting budget', async () => {
+    mutateAsyncMock.mockResolvedValue({});
+
+    renderModal();
+
+    fireEvent.change(screen.getByLabelText(/league name/i), {
+      target: { value: 'Budget League' },
+    });
+    fireEvent.change(screen.getByLabelText(/starting budget/i), {
+      target: { value: '300' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create League' }));
+
+    await waitFor(() => {
+      expect(mutateAsyncMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mutateAsyncMock.mock.calls[0][0].input.totalBudget).toBe(300);
   });
 });

@@ -47,19 +47,21 @@ export default function UpsertLeagueModal({
   type LeagueForm = {
     leagueName: string;
     teams: string;
+    totalBudget: string;
     draftType: 'auction';
     rosterSlots: Record<keyof RosterSlots, string>;
   };
 
   const DEFAULT_FORM: LeagueForm = useMemo(() => {
     const teams =
-      initialLeague?.teams ??
+      initialLeague?.teams?.length ??
       parseTeamsFromDescription(initialLeague?.description) ??
       12;
 
     return {
       leagueName: initialLeague?.name ?? '',
       teams: String(teams),
+      totalBudget: String(initialLeague?.totalBudget ?? 260),
       draftType: 'auction',
       rosterSlots: ROSTER_POSITIONS.reduce(
         (acc, position) => {
@@ -83,13 +85,16 @@ export default function UpsertLeagueModal({
 
   const canSubmit = useMemo(() => {
     const parsedTeams = Number.parseInt(form.teams, 10);
+    const parsedTotalBudget = Number.parseInt(form.totalBudget, 10);
 
     return (
       form.leagueName.trim().length > 0 &&
       !Number.isNaN(parsedTeams) &&
-      parsedTeams > 1
+      parsedTeams > 1 &&
+      !Number.isNaN(parsedTotalBudget) &&
+      parsedTotalBudget >= 0
     );
-  }, [form.leagueName, form.teams]);
+  }, [form.leagueName, form.teams, form.totalBudget]);
 
   function handleRosterSlotChange(position: keyof RosterSlots, value: string) {
     // Allow users to freely edit (including empty), without snapping values.
@@ -117,7 +122,8 @@ export default function UpsertLeagueModal({
     if (!canSubmit) return;
 
     const parsedTeams = Number.parseInt(form.teams, 10);
-    if (Number.isNaN(parsedTeams)) return;
+    const parsedTotalBudget = Number.parseInt(form.totalBudget, 10);
+    if (Number.isNaN(parsedTeams) || Number.isNaN(parsedTotalBudget)) return;
 
     const rosterSlots = ROSTER_POSITIONS.reduce((acc, position) => {
       const raw = form.rosterSlots[position];
@@ -131,6 +137,7 @@ export default function UpsertLeagueModal({
       teams: Math.max(2, parsedTeams),
       draftType: form.draftType,
       rosterSlots,
+      totalBudget: Math.max(0, parsedTotalBudget),
     };
 
     try {
@@ -196,6 +203,21 @@ export default function UpsertLeagueModal({
               >
                 <option value="auction">Auction</option>
               </Select>
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel htmlFor="totalBudget">Starting Budget ($)</FormLabel>
+              <Input
+                id="totalBudget"
+                type="number"
+                min={0}
+                value={form.totalBudget}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  if (next !== '' && !/^\d+$/.test(next)) return;
+                  setForm((prev) => ({ ...prev, totalBudget: next }));
+                }}
+              />
             </FormControl>
 
             <FormControl>

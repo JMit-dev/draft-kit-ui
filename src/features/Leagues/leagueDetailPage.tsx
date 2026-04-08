@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogBody,
@@ -21,14 +21,33 @@ import {
   Thead,
   TableContainer,
   Button,
+  SimpleGrid,
   useDisclosure,
 } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import LeagueTeamTable from './components/LeagueTeamTable';
 import { useLeague } from './hooks/useLeague';
 import { useDeleteLeague } from './hooks/useDeleteLeague';
+import { useUpsertLeague } from './hooks/useUpsertLeague';
 import UpsertLeagueModal from './components/UpsertLeagueModal';
 import { parseTeamsFromDescription } from './utils/leagueForm';
+import type { LeagueTeam, TakenPlayer } from './types/leagues.types';
+
+function buildDisplayTeams(
+  teams: LeagueTeam[] | undefined,
+  teamCount: number | undefined,
+  startingBudget: number,
+): LeagueTeam[] {
+  if (!teamCount || teamCount < 1) return teams ?? [];
+
+  return Array.from({ length: teamCount }, (_, index) => {
+    const existingTeam = teams?.[index];
+    return (
+      existingTeam ?? [`team-${index + 1}`, `Team ${index + 1}`, startingBudget]
+    );
+  });
+}
 
 export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   const { data, isLoading, error } = useLeague(leagueId);
@@ -37,20 +56,120 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   const deleteConfirm = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
   const deleteLeagueMutation = useDeleteLeague();
+  const upsertLeagueMutation = useUpsertLeague();
+  const [editedTeams, setEditedTeams] = useState<LeagueTeam[]>([]);
+  const [editedTakenPlayers, setEditedTakenPlayers] = useState<TakenPlayer[]>(
+    [],
+  );
+  const league = data?.data;
+
+  useEffect(() => {
+    if (!league) {
+      setEditedTeams([]);
+      setEditedTakenPlayers([]);
+      return;
+    }
+
+    setEditedTeams(
+      buildDisplayTeams(
+        league.teams,
+        league.teams?.length ?? parseTeamsFromDescription(league.description),
+        league.totalBudget ?? 0,
+      ),
+    );
+    const nextTakenPlayers = league.taken_players ?? [];
+    setEditedTakenPlayers(nextTakenPlayers);
+  }, [league]);
 
   if (isLoading) return <Spinner />;
   if (error) return <Text>Unable to load league</Text>;
-
-  const league = data?.data;
   if (!league) return <Text>League not found</Text>;
-  const teams = league.teams ?? parseTeamsFromDescription(league.description);
+  const teamCount =
+    league.teams?.length ?? parseTeamsFromDescription(league.description);
   const leagueIdToDelete = league._id;
+  const displayTeams =
+    editedTeams.length > 0
+      ? editedTeams
+      : buildDisplayTeams(league.teams, teamCount, league.totalBudget ?? 0);
 
   async function handleDelete() {
     try {
       await deleteLeagueMutation.mutateAsync(leagueIdToDelete);
       deleteConfirm.onClose();
       router.push('/leagues');
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function updateTeamTakenPlayers(
+    currentTakenPlayers: TakenPlayer[],
+    teamId: string,
+    rows: Array<{ rowId: string; playerName: string; price: number }>,
+  ): TakenPlayer[] {
+    const rowsBySlot = new Map(rows.map((row) => [row.rowId, row]));
+    const updatedTakenPlayers: TakenPlayer[] = [];
+    const handledSlots = new Set<string>();
+
+    currentTakenPlayers.forEach((takenPlayer) => {
+      const [playerId, takenPlayerTeamId, positionSlot] = takenPlayer;
+      if (takenPlayerTeamId !== teamId) {
+        updatedTakenPlayers.push(takenPlayer);
+        return;
+      }
+
+      const matchingRow = rowsBySlot.get(positionSlot);
+      if (!matchingRow) {
+        updatedTakenPlayers.push(takenPlayer);
+        return;
+      }
+
+      handledSlots.add(positionSlot);
+      updatedTakenPlayers.push([
+        playerId,
+        teamId,
+        positionSlot,
+        matchingRow.price,
+      ]);
+    });
+
+    rows.forEach((row) => {
+      if (handledSlots.has(row.rowId) || row.price <= 0) return;
+      updatedTakenPlayers.push(['', teamId, row.rowId, row.price]);
+    });
+
+    return updatedTakenPlayers;
+  }
+
+  async function saveLeagueChanges(
+    nextTeams: LeagueTeam[],
+    nextTakenPlayers: TakenPlayer[],
+  ) {
+    try {
+      await upsertLeagueMutation.mutateAsync({
+        input: {
+          name: league.name,
+          teams: teamCount ?? displayTeams.length,
+          draftType: (league.draftType ?? 'auction') as 'auction',
+          rosterSlots: league.rosterSlots ?? {
+            C: 1,
+            '1B': 1,
+            '2B': 1,
+            '3B': 1,
+            SS: 1,
+            OF: 3,
+            DH: 0,
+            SP: 5,
+            RP: 2,
+            UTIL: 0,
+            BENCH: 0,
+          },
+          totalBudget: league.totalBudget ?? 0,
+          takenPlayers: nextTakenPlayers,
+          teamsData: nextTeams,
+        },
+        existingLeague: league,
+      });
     } catch (err) {
       console.error(err);
     }
@@ -92,41 +211,72 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
               </Tr>
               <Tr>
                 <Td>Teams</Td>
-                <Td>{teams ?? '-'}</Td>
+                <Td>{teamCount ?? '-'}</Td>
               </Tr>
               <Tr>
                 <Td>Draft Type</Td>
                 <Td>{league.draftType ?? '-'}</Td>
               </Tr>
+              <Tr>
+                <Td>Starting Budget</Td>
+                <Td>
+                  {typeof league.totalBudget === 'number'
+                    ? `$${league.totalBudget}`
+                    : '-'}
+                </Td>
+              </Tr>
             </Tbody>
           </Table>
         </TableContainer>
 
-        {league.rosterSlots ? (
+        {displayTeams.length ? (
           <Box>
             <Heading size="md" mb={2}>
-              Roster Slots
+              Teams
             </Heading>
-            <TableContainer borderWidth="1px" borderRadius="md">
-              <Table size="sm">
-                <Thead>
-                  <Tr>
-                    <Th>Position</Th>
-                    <Th isNumeric>Slots</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {Object.entries(league.rosterSlots).map(
-                    ([position, slots]) => (
-                      <Tr key={position}>
-                        <Td>{position}</Td>
-                        <Td isNumeric>{slots}</Td>
-                      </Tr>
-                    ),
-                  )}
-                </Tbody>
-              </Table>
-            </TableContainer>
+            <SimpleGrid
+              columns={{ base: 1, xl: 3 }}
+              spacing={4}
+              alignItems="start"
+            >
+              {displayTeams.map((team) => {
+                const [teamId] = team;
+                const takenPlayersForTeam = editedTakenPlayers.filter(
+                  ([, takenPlayerTeamId]) => takenPlayerTeamId === teamId,
+                );
+
+                return (
+                  <LeagueTeamTable
+                    key={teamId}
+                    team={team}
+                    rosterSlots={league.rosterSlots}
+                    takenPlayers={takenPlayersForTeam}
+                    startingBudget={league.totalBudget ?? 0}
+                    isSaving={upsertLeagueMutation.isPending}
+                    onSaveChanges={({ teamName, rows }) => {
+                      const nextTeams = displayTeams.map((currentTeam) =>
+                        currentTeam[0] === teamId
+                          ? [currentTeam[0], teamName, currentTeam[2]]
+                          : currentTeam,
+                      ) as LeagueTeam[];
+                      const nextTakenPlayers = updateTeamTakenPlayers(
+                        editedTakenPlayers,
+                        teamId,
+                        rows,
+                      );
+                      setEditedTeams(nextTeams);
+                      setEditedTakenPlayers(nextTakenPlayers);
+                      void saveLeagueChanges(nextTeams, nextTakenPlayers);
+                    }}
+                  />
+                );
+              })}
+            </SimpleGrid>
+            {upsertLeagueMutation.isError ? (
+              <Text mt={3} color="red.500" fontSize="sm">
+                Failed to save league changes. Check API connection and API key.
+              </Text>
+            ) : null}
           </Box>
         ) : null}
       </Stack>

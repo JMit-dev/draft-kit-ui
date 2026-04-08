@@ -39,10 +39,23 @@ describe('UpsertLeagueModal', () => {
       _id: 'league-123',
       externalId: 'custom-league-123',
       name: 'Old Name',
-      teams: 10,
+      totalBudget: 275,
       description: '10 teams',
       format: 'roto',
       draftType: 'auction',
+      taken_players: [],
+      teams: [
+        ['team-1', 'Team 1', 275],
+        ['team-2', 'Team 2', 275],
+        ['team-3', 'Team 3', 275],
+        ['team-4', 'Team 4', 275],
+        ['team-5', 'Team 5', 275],
+        ['team-6', 'Team 6', 275],
+        ['team-7', 'Team 7', 275],
+        ['team-8', 'Team 8', 275],
+        ['team-9', 'Team 9', 275],
+        ['team-10', 'Team 10', 275],
+      ],
       battingCategories: ['R', 'HR', 'RBI', 'SB', 'AVG'],
       pitchingCategories: ['W', 'SV', 'K', 'ERA', 'WHIP'],
       rosterSlots: {
@@ -66,6 +79,12 @@ describe('UpsertLeagueModal', () => {
 
     const nameInput = screen.getByLabelText(/league name/i);
     fireEvent.change(nameInput, { target: { value: 'New Name' } });
+    expect(
+      (screen.getByLabelText(/starting budget/i) as HTMLInputElement).value,
+    ).toBe('275');
+    fireEvent.change(screen.getByLabelText(/starting budget/i), {
+      target: { value: '300' },
+    });
 
     const saveButton = screen.getByRole('button', {
       name: /save changes/i,
@@ -80,5 +99,6 @@ describe('UpsertLeagueModal', () => {
     expect(args.input.name).toBe('New Name');
     expect(args.input.teams).toBe(10);
     expect(args.input.draftType).toBe('auction');
+    expect(args.input.totalBudget).toBe(300);
   });
 });

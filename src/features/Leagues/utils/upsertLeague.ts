@@ -3,6 +3,8 @@ import type {
   CreateLeagueInput,
   CreateLeagueResponse,
   League,
+  LeagueTeam,
+  TakenPlayer,
 } from '../types/leagues.types';
 
 const DEFAULT_BATTING_CATEGORIES = ['R', 'HR', 'RBI', 'SB', 'AVG'] as const;
@@ -18,6 +20,42 @@ function toExternalId(name: string): string {
   return `custom-${slug || 'league'}-${Date.now()}`;
 }
 
+function toTeamId(index: number): string {
+  return `team-${index + 1}`;
+}
+
+function calculateCurrentBudget(
+  startingBudget: number,
+  takenPlayers: TakenPlayer[],
+  teamId: string,
+): number {
+  const spent = takenPlayers.reduce((sum, [, takenTeamId, , price]) => {
+    if (takenTeamId !== teamId) return sum;
+    return sum + price;
+  }, 0);
+
+  return Math.max(0, startingBudget - spent);
+}
+
+function buildLeagueTeams(
+  teamCount: number,
+  startingBudget: number,
+  takenPlayers: TakenPlayer[],
+  existingTeams?: LeagueTeam[],
+): LeagueTeam[] {
+  return Array.from({ length: teamCount }, (_, index) => {
+    const existingTeam = existingTeams?.[index];
+    const teamId = existingTeam?.[0] ?? toTeamId(index);
+    const teamName = existingTeam?.[1] ?? `Team ${index + 1}`;
+
+    return [
+      teamId,
+      teamName,
+      calculateCurrentBudget(startingBudget, takenPlayers, teamId),
+    ];
+  });
+}
+
 export async function upsertLeague(
   input: CreateLeagueInput,
   existingLeague?: League,
@@ -29,6 +67,14 @@ export async function upsertLeague(
   }
 
   const externalId = existingLeague?.externalId ?? toExternalId(input.name);
+  const takenPlayers =
+    input.takenPlayers ?? existingLeague?.taken_players ?? [];
+  const teams = buildLeagueTeams(
+    input.teams,
+    input.totalBudget,
+    takenPlayers,
+    input.teamsData ?? existingLeague?.teams,
+  );
 
   return apiClient.post<CreateLeagueResponse>('/api/leagues', {
     externalId,
@@ -43,7 +89,9 @@ export async function upsertLeague(
       ...DEFAULT_PITCHING_CATEGORIES,
     ],
     rosterSlots: input.rosterSlots,
-    totalBudget: existingLeague?.totalBudget ?? 260,
+    totalBudget: input.totalBudget,
+    taken_players: takenPlayers,
+    teams,
     isDefault: existingLeague?.isDefault ?? false,
     categoryWeights: existingLeague?.categoryWeights,
   });
