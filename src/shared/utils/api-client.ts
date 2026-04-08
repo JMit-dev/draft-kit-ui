@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
 
 interface RequestOptions extends RequestInit {
@@ -45,7 +45,10 @@ class ApiClient {
     endpoint: string,
     params?: Record<string, string | number | boolean | undefined>,
   ): string {
-    const url = new URL(`${this.baseURL}${endpoint}`);
+    const hasAbsoluteBase = Boolean(this.baseURL);
+    const url = hasAbsoluteBase
+      ? new URL(`${this.baseURL}${endpoint}`)
+      : new URL(endpoint, 'http://localhost');
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -53,6 +56,10 @@ class ApiClient {
           url.searchParams.append(key, String(value));
         }
       });
+    }
+
+    if (!hasAbsoluteBase) {
+      return `${url.pathname}${url.search}`;
     }
 
     return url.toString();
