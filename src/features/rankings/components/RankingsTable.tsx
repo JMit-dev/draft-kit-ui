@@ -41,10 +41,20 @@ type Player = {
   playerType: string;
   league: string;
   injuryStatus: string;
+  depthChartStatus?: string;
   active: boolean;
   age?: number;
   batSide?: string;
   pitchHand?: string;
+};
+
+const DEPTH_CHART_STATUSES = ['starter', 'backup', 'reserve', 'minors'] as const;
+
+const DEPTH_CHART_COLORS: Record<string, string> = {
+  starter: 'green',
+  backup: 'blue',
+  reserve: 'orange',
+  minors: 'gray',
 };
 
 type PlayersResponse = {
@@ -65,6 +75,7 @@ export default function RankingsTable() {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [selectedLeagues, setSelectedLeagues] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedDepthStatuses, setSelectedDepthStatuses] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -156,13 +167,18 @@ export default function RankingsTable() {
       const matchesStatus =
         selectedStatuses.length === 0 ||
         selectedStatuses.includes(player.injuryStatus);
+      const matchesDepthStatus =
+        selectedDepthStatuses.length === 0 ||
+        (player.depthChartStatus !== undefined &&
+          selectedDepthStatuses.includes(player.depthChartStatus));
 
       return (
         matchesPosition &&
         matchesSearch &&
         matchesTeam &&
         matchesLeague &&
-        matchesStatus
+        matchesStatus &&
+        matchesDepthStatus
       );
     });
 
@@ -174,6 +190,7 @@ export default function RankingsTable() {
     selectedLeagues,
     selectedPosition,
     selectedStatuses,
+    selectedDepthStatuses,
     selectedTeams,
   ]);
 
@@ -239,7 +256,7 @@ export default function RankingsTable() {
                 </CheckboxGroup>
 
                 <Text fontSize="sm" fontWeight="bold" mb={2} mt={4}>
-                  Status
+                  Injury Status
                 </Text>
                 <CheckboxGroup
                   value={selectedStatuses}
@@ -247,6 +264,24 @@ export default function RankingsTable() {
                 >
                   <Stack spacing={1}>
                     {statuses.map((status) => (
+                      <Checkbox key={status} value={status}>
+                        {status}
+                      </Checkbox>
+                    ))}
+                  </Stack>
+                </CheckboxGroup>
+
+                <Text fontSize="sm" fontWeight="bold" mb={2} mt={4}>
+                  Depth Chart
+                </Text>
+                <CheckboxGroup
+                  value={selectedDepthStatuses}
+                  onChange={(value) =>
+                    setSelectedDepthStatuses(value as string[])
+                  }
+                >
+                  <Stack spacing={1}>
+                    {DEPTH_CHART_STATUSES.map((status) => (
                       <Checkbox key={status} value={status}>
                         {status}
                       </Checkbox>
@@ -322,6 +357,7 @@ export default function RankingsTable() {
               <Th>Type</Th>
               <Th>League</Th>
               <Th>Status</Th>
+              <Th>Depth</Th>
               <Th>Age</Th>
               <Th>Bats/Throws</Th>
             </Tr>
@@ -343,6 +379,19 @@ export default function RankingsTable() {
                   >
                     {player.injuryStatus}
                   </Badge>
+                </Td>
+                <Td>
+                  {player.depthChartStatus ? (
+                    <Badge
+                      colorScheme={
+                        DEPTH_CHART_COLORS[player.depthChartStatus] ?? 'gray'
+                      }
+                    >
+                      {player.depthChartStatus}
+                    </Badge>
+                  ) : (
+                    '-'
+                  )}
                 </Td>
                 <Td>{player.age ?? '-'}</Td>
                 <Td>{player.batSide || player.pitchHand || '-'}</Td>
