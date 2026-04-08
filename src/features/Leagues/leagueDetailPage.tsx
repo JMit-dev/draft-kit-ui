@@ -152,6 +152,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
     nextTakenPlayers: TakenPlayer[],
   ) {
     try {
+      if (!league) return;
       await upsertLeagueMutation.mutateAsync({
         input: {
           name: currentLeague.name,
