@@ -14,6 +14,7 @@ import {
   Th,
   Thead,
   Tr,
+  useToast,
 } from '@chakra-ui/react';
 import type {
   LeagueTeam,
@@ -122,6 +123,7 @@ export default function LeagueTeamTable({
   onSaveChanges,
   isSaving = false,
 }: LeagueTeamTableProps) {
+  const toast = useToast();
   const [, teamName] = team;
   const propRows = useMemo(
     () => buildTeamRows(rosterSlots, takenPlayers),
@@ -277,6 +279,24 @@ export default function LeagueTeamTable({
   }
 
   function handleSaveChanges() {
+    const invalidRows = rows.filter((row) => {
+      const price = parsePrice(row.price);
+      return (row.playerId && price <= 0) || (!row.playerId && price > 0);
+    });
+
+    if (invalidRows.length > 0) {
+      toast({
+        title: 'Incomplete row data.',
+        description:
+          'Each drafted row needs both a selected player and a price. Fix the missing field(s) and try again.',
+        status: 'error',
+        duration: 2000,
+        isClosable: true,
+        position: 'top',
+      });
+      return;
+    }
+
     onSaveChanges?.({
       teamName: localTeamName.trim() || teamName,
       rows: rows.map((row) => ({

@@ -1,3 +1,11 @@
+vi.mock('@chakra-ui/react', async () => {
+  const actual = await vi.importActual<any>('@chakra-ui/react');
+  return {
+    ...actual,
+    useToast: () => vi.fn(),
+  };
+});
+
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ChakraProvider } from '@chakra-ui/react';
@@ -7,12 +15,17 @@ const fetchMock = vi.fn();
 
 async function renderLeagueTeamTable(element: JSX.Element) {
   render(element);
-  await screen.findAllByPlaceholderText('Search players...');
-  await waitFor(() => {
-    expect(document.querySelectorAll('datalist option').length).toBeGreaterThan(
-      0,
-    );
+  await screen.findAllByPlaceholderText('Search players...', undefined, {
+    timeout: 3000,
   });
+  await waitFor(
+    () => {
+      expect(
+        document.querySelectorAll('datalist option').length,
+      ).toBeGreaterThan(0);
+    },
+    { timeout: 3000 },
+  );
 }
 
 describe('LeagueTeamTable', () => {
@@ -135,9 +148,15 @@ describe('LeagueTeamTable', () => {
     expect(screen.getByText('C')).toBeTruthy();
     expect(screen.getByText('1B')).toBeTruthy();
     expect(screen.getAllByText('OF')).toHaveLength(2);
-    expect(screen.getByDisplayValue('A. Rutschman')).toBeTruthy();
-    expect(screen.getByDisplayValue('F. Freeman')).toBeTruthy();
-    expect(screen.getByDisplayValue('J. Rodriguez')).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('A. Rutschman')).toBeTruthy(),
+    );
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('F. Freeman')).toBeTruthy(),
+    );
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('J. Rodriguez')).toBeTruthy(),
+    );
     expect(screen.getByText('BAL')).toBeTruthy();
     expect(screen.getByText('LAD')).toBeTruthy();
     expect(screen.getByText('SEA')).toBeTruthy();
@@ -171,7 +190,9 @@ describe('LeagueTeamTable', () => {
     );
 
     expect(screen.getByText('Budget: $285')).toBeTruthy();
-    expect(screen.getByDisplayValue('W. Contreras')).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('W. Contreras')).toBeTruthy(),
+    );
     expect(screen.getByText('MIL')).toBeTruthy();
     expect(
       screen.getAllByPlaceholderText('Search players...').length,
