@@ -343,6 +343,115 @@ describe('LeagueTeamTable', () => {
     expect(screen.queryByDisplayValue('100')).toBeNull();
   });
 
+  it('excludes taken players from other teams from all dropdown options', async () => {
+    await renderLeagueTeamTable(
+      <ChakraProvider>
+        <LeagueTeamTable
+          team={['team-1', 'Alpha', 100]}
+          startingBudget={100}
+          rosterSlots={{
+            C: 2,
+            '1B': 0,
+            '2B': 0,
+            '3B': 0,
+            SS: 0,
+            OF: 0,
+            DH: 0,
+            SP: 0,
+            RP: 0,
+            UTIL: 0,
+            BENCH: 0,
+          }}
+          takenPlayers={[
+            // Adley is taken by another team — should not appear in any slot
+            ['player-adley', 'team-2', 'C-0', 20],
+          ]}
+        />
+      </ChakraProvider>,
+    );
+
+    const datalists = document.querySelectorAll('datalist');
+    for (const datalist of datalists) {
+      const options = Array.from(datalist.querySelectorAll('option')).map(
+        (o) => o.value,
+      );
+      expect(options).not.toContain('Adley Rutschman');
+      // Other catchers should still be available
+      expect(options).toContain('William Contreras');
+    }
+  });
+
+  it('excludes a player already assigned in one slot from all other slots on the same team', async () => {
+    await renderLeagueTeamTable(
+      <ChakraProvider>
+        <LeagueTeamTable
+          team={['team-1', 'Alpha', 100]}
+          startingBudget={100}
+          rosterSlots={{
+            C: 2,
+            '1B': 0,
+            '2B': 0,
+            '3B': 0,
+            SS: 0,
+            OF: 0,
+            DH: 0,
+            SP: 0,
+            RP: 0,
+            UTIL: 0,
+            BENCH: 0,
+          }}
+          takenPlayers={[
+            // Adley is assigned to slot C-0 on this team
+            ['player-adley', 'team-1', 'C-0', 20],
+          ]}
+        />
+      </ChakraProvider>,
+    );
+
+    const datalists = document.querySelectorAll('datalist');
+
+    // C-0's own datalist: Adley should still appear (it's the player assigned there)
+    // C-1's datalist: Adley should be excluded since they're taken in C-0
+    const secondDatalist = datalists[1];
+    const secondOptions = Array.from(
+      secondDatalist.querySelectorAll('option'),
+    ).map((o) => o.value);
+    expect(secondOptions).not.toContain('Adley Rutschman');
+    expect(secondOptions).toContain('William Contreras');
+  });
+
+  it('still shows the assigned player in their own slot dropdown', async () => {
+    await renderLeagueTeamTable(
+      <ChakraProvider>
+        <LeagueTeamTable
+          team={['team-1', 'Alpha', 100]}
+          startingBudget={100}
+          rosterSlots={{
+            C: 2,
+            '1B': 0,
+            '2B': 0,
+            '3B': 0,
+            SS: 0,
+            OF: 0,
+            DH: 0,
+            SP: 0,
+            RP: 0,
+            UTIL: 0,
+            BENCH: 0,
+          }}
+          takenPlayers={[['player-adley', 'team-1', 'C-0', 20]]}
+        />
+      </ChakraProvider>,
+    );
+
+    const datalists = document.querySelectorAll('datalist');
+    const firstOptions = Array.from(
+      datalists[0].querySelectorAll('option'),
+    ).map((o) => o.value);
+    // C-0 should still see Adley as a valid option for its own slot
+    expect(firstOptions).toContain('Adley Rutschman');
+  });
+
   it('filters dropdown options by position and allows all hitters in UTIL and all players in BENCH', async () => {
     await renderLeagueTeamTable(
       <ChakraProvider>

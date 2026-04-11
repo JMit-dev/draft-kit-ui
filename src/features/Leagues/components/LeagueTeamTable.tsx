@@ -228,6 +228,29 @@ export default function LeagueTeamTable({
 
   const rows = localRows;
   const currentBudget = calculateCurrentBudgetFromRows(startingBudget, rows);
+
+  // Player IDs taken by other teams in the league (excludes this team's own players)
+  const [teamId] = team;
+  const leagueTakenPlayerIds = useMemo(
+    () =>
+      new Set(
+        takenPlayers
+          .filter(([, takenByTeamId]) => takenByTeamId !== teamId)
+          .map(([playerId]) => playerId),
+      ),
+    [takenPlayers, teamId],
+  );
+
+  // Returns IDs unavailable for a given row: league-wide taken + other slots in this table
+  function getUnavailablePlayerIds(currentRowIndex: number): Set<string> {
+    const ids = new Set(leagueTakenPlayerIds);
+    rows.forEach((row, index) => {
+      if (index !== currentRowIndex && row.playerId) {
+        ids.add(row.playerId);
+      }
+    });
+    return ids;
+  }
   const isDirty =
     localTeamName !== teamName ||
     rows.some(
@@ -260,8 +283,17 @@ export default function LeagueTeamTable({
       prev.map((row, index) => {
         if (index !== rowIndex) return row;
 
-        const allowedPlayers = players.filter((player) =>
-          isPlayerAllowedForRow(player, row.position),
+        // Build unavailable set from prev (fresh state) to avoid stale closure
+        const unavailable = new Set(leagueTakenPlayerIds);
+        prev.forEach((otherRow, otherIndex) => {
+          if (otherIndex !== rowIndex && otherRow.playerId) {
+            unavailable.add(otherRow.playerId);
+          }
+        });
+        const allowedPlayers = players.filter(
+          (player) =>
+            isPlayerAllowedForRow(player, row.position) &&
+            !unavailable.has(player._id),
         );
         const exactMatch = allowedPlayers.find(
           (player) =>
@@ -373,9 +405,13 @@ export default function LeagueTeamTable({
                   />
                   <datalist id={`player-options-${row.rowId}`}>
                     {players
-                      .filter((player) =>
-                        isPlayerAllowedForRow(player, row.position),
-                      )
+                      .filter((player) => {
+                        const unavailable = getUnavailablePlayerIds(rowIndex);
+                        return (
+                          isPlayerAllowedForRow(player, row.position) &&
+                          !unavailable.has(player._id)
+                        );
+                      })
                       .map((player) => (
                         <option key={player._id} value={player.name} />
                       ))}
