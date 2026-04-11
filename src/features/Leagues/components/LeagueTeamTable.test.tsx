@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ChakraProvider } from '@chakra-ui/react';
 import LeagueTeamTable from './LeagueTeamTable';
 
@@ -7,7 +7,12 @@ const fetchMock = vi.fn();
 
 async function renderLeagueTeamTable(element: JSX.Element) {
   render(element);
-  await screen.findAllByRole('combobox');
+  await screen.findAllByPlaceholderText('Search players...');
+  await waitFor(() => {
+    expect(document.querySelectorAll('datalist option').length).toBeGreaterThan(
+      0,
+    );
+  });
 }
 
 describe('LeagueTeamTable', () => {
@@ -120,9 +125,9 @@ describe('LeagueTeamTable', () => {
     expect(screen.getByText('C')).toBeTruthy();
     expect(screen.getByText('1B')).toBeTruthy();
     expect(screen.getAllByText('OF')).toHaveLength(2);
-    expect(screen.getAllByText('Adley Rutschman').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Freddie Freeman').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Julio Rodriguez').length).toBeGreaterThan(0);
+    expect(screen.getByDisplayValue('Adley Rutschman')).toBeTruthy();
+    expect(screen.getByDisplayValue('Freddie Freeman')).toBeTruthy();
+    expect(screen.getByDisplayValue('Julio Rodriguez')).toBeTruthy();
     expect(screen.getByDisplayValue('20')).toBeTruthy();
     expect(screen.getByDisplayValue('35')).toBeTruthy();
     expect(screen.getByDisplayValue('40')).toBeTruthy();
@@ -153,10 +158,10 @@ describe('LeagueTeamTable', () => {
     );
 
     expect(screen.getByText('Budget: $285')).toBeTruthy();
-    expect(screen.getAllByText('William Contreras').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Select player').length).toBeGreaterThanOrEqual(
-      2,
-    );
+    expect(screen.getByDisplayValue('William Contreras')).toBeTruthy();
+    expect(
+      screen.getAllByPlaceholderText('Search players...').length,
+    ).toBeGreaterThanOrEqual(2);
     expect(screen.getByDisplayValue('15')).toBeTruthy();
   });
 
@@ -296,9 +301,9 @@ describe('LeagueTeamTable', () => {
       </ChakraProvider>,
     );
 
-    expect(screen.getAllByText('First Base Player').length).toBeGreaterThan(0);
+    expect(screen.getByDisplayValue('First Base Player')).toBeTruthy();
     expect(screen.getByDisplayValue('35')).toBeTruthy();
-    expect(screen.getAllByText('Outfielder').length).toBeGreaterThan(0);
+    expect(screen.getByDisplayValue('Outfielder')).toBeTruthy();
     expect(screen.getByDisplayValue('22')).toBeTruthy();
     expect(screen.queryByDisplayValue('100')).toBeNull();
   });
@@ -327,20 +332,26 @@ describe('LeagueTeamTable', () => {
       </ChakraProvider>,
     );
 
-    const selects = screen.getAllByRole('combobox') as HTMLSelectElement[];
-    expect(selects).toHaveLength(3);
+    const datalists = document.querySelectorAll('datalist');
+    expect(datalists).toHaveLength(3);
 
-    // C row should only show C-eligible players
-    expect(selects[0].textContent).toContain('Adley Rutschman');
-    expect(selects[0].textContent).not.toContain('Mock Player SP');
+    const firstOptions = Array.from(
+      datalists[0].querySelectorAll('option'),
+    ).map((option) => option.value);
+    expect(firstOptions).toContain('Adley Rutschman');
+    expect(firstOptions).not.toContain('Mock Player SP');
 
-    // UTIL should show only hitters
-    expect(selects[1].textContent).toContain('Player A');
-    expect(selects[1].textContent).toContain('First Base Player');
-    expect(selects[1].textContent).not.toContain('Mock Player SP');
+    const secondOptions = Array.from(
+      datalists[1].querySelectorAll('option'),
+    ).map((option) => option.value);
+    expect(secondOptions).toContain('Player A');
+    expect(secondOptions).toContain('First Base Player');
+    expect(secondOptions).not.toContain('Mock Player SP');
 
-    // BENCH should show everyone, including pitchers
-    expect(selects[2].textContent).toContain('Adley Rutschman');
-    expect(selects[2].textContent).toContain('Mock Player SP');
+    const thirdOptions = Array.from(
+      datalists[2].querySelectorAll('option'),
+    ).map((option) => option.value);
+    expect(thirdOptions).toContain('Adley Rutschman');
+    expect(thirdOptions).toContain('Mock Player SP');
   });
 });

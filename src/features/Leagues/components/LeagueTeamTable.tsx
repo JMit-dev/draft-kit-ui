@@ -6,7 +6,6 @@ import {
   Button,
   Flex,
   Input,
-  Select,
   Table,
   TableContainer,
   Tbody,
@@ -44,6 +43,7 @@ type TeamTableRow = {
   rowId: string;
   position: string;
   playerId: string;
+  search: string;
   price: string;
 };
 
@@ -82,6 +82,7 @@ function buildTeamRows(
         rowId,
         position,
         playerId: player?.[0] ?? '',
+        search: '',
         price: String(player?.[3] ?? 0),
       };
     }),
@@ -121,8 +122,21 @@ export default function LeagueTeamTable({
 
   useEffect(() => {
     setLocalTeamName(teamName);
-    setLocalRows(propRows);
-  }, [propRows, teamName]);
+    setLocalRows(
+      players.length > 0
+        ? propRows.map((row) => {
+            if (!row.playerId || row.search) return row;
+
+            const matchingPlayer = players.find(
+              (player) => player._id === row.playerId,
+            );
+            return matchingPlayer
+              ? { ...row, search: matchingPlayer.name }
+              : row;
+          })
+        : propRows,
+    );
+  }, [propRows, teamName, players]);
 
   useEffect(() => {
     let active = true;
@@ -201,11 +215,24 @@ export default function LeagueTeamTable({
     });
   }
 
-  function handlePlayerSelectionChange(rowIndex: number, value: string) {
+  function handlePlayerSearchChange(rowIndex: number, value: string) {
     setLocalRows((prev) =>
-      prev.map((row, index) =>
-        index === rowIndex ? { ...row, playerId: value } : row,
-      ),
+      prev.map((row, index) => {
+        if (index !== rowIndex) return row;
+
+        const allowedPlayers = players.filter((player) =>
+          isPlayerAllowedForRow(player, row.position),
+        );
+        const exactMatch = allowedPlayers.find(
+          (player) => player.name === value,
+        );
+
+        return {
+          ...row,
+          search: value,
+          playerId: exactMatch?._id ?? '',
+        };
+      }),
     );
   }
 
@@ -268,33 +295,30 @@ export default function LeagueTeamTable({
               <Tr key={row.rowId}>
                 <Td>{row.position}</Td>
                 <Td>
-                  <Select
-                    value={row.playerId}
-                    onChange={(e) =>
-                      handlePlayerSelectionChange(rowIndex, e.target.value)
-                    }
+                  <Input
                     size="sm"
                     bg="white"
+                    value={row.search}
                     placeholder={
-                      isLoadingPlayers ? 'Loading players...' : 'Select player'
+                      isLoadingPlayers
+                        ? 'Loading players...'
+                        : 'Search players...'
+                    }
+                    list={`player-options-${row.rowId}`}
+                    onChange={(e) =>
+                      handlePlayerSearchChange(rowIndex, e.target.value)
                     }
                     isDisabled={isSaving || isLoadingPlayers}
-                  >
-                    {!isLoadingPlayers && players.length === 0 ? (
-                      <option value="" disabled>
-                        No players available
-                      </option>
-                    ) : null}
+                  />
+                  <datalist id={`player-options-${row.rowId}`}>
                     {players
                       .filter((player) =>
                         isPlayerAllowedForRow(player, row.position),
                       )
                       .map((player) => (
-                        <option key={player._id} value={player._id}>
-                          {player.name}
-                        </option>
+                        <option key={player._id} value={player.name} />
                       ))}
-                  </Select>
+                  </datalist>
                 </Td>
                 <Td isNumeric>
                   <Input
