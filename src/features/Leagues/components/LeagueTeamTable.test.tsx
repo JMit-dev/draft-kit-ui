@@ -1,11 +1,94 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { ChakraProvider } from '@chakra-ui/react';
 import LeagueTeamTable from './LeagueTeamTable';
 
+const fetchMock = vi.fn();
+
+async function renderLeagueTeamTable(element: JSX.Element) {
+  render(element);
+  await screen.findByText('Adley Rutschman');
+}
+
 describe('LeagueTeamTable', () => {
-  it('renders the team name, calculated budget, and rows from roster slots', () => {
-    render(
+  beforeEach(() => {
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        data: [
+          {
+            _id: 'player-adley',
+            name: 'Adley Rutschman',
+            positions: ['C'],
+            playerType: 'hitter',
+          },
+          {
+            _id: 'player-freddie',
+            name: 'Freddie Freeman',
+            positions: ['1B'],
+            playerType: 'hitter',
+          },
+          {
+            _id: 'player-julio',
+            name: 'Julio Rodriguez',
+            positions: ['OF'],
+            playerType: 'hitter',
+          },
+          {
+            _id: 'player-william',
+            name: 'William Contreras',
+            positions: ['C'],
+            playerType: 'hitter',
+          },
+          {
+            _id: 'player-a',
+            name: 'Player A',
+            positions: ['C'],
+            playerType: 'hitter',
+          },
+          {
+            _id: 'player-b',
+            name: 'Player B',
+            positions: ['1B'],
+            playerType: 'hitter',
+          },
+          {
+            _id: 'player-catcher',
+            name: 'Catcher Player',
+            positions: ['C'],
+            playerType: 'hitter',
+          },
+          {
+            _id: 'player-firstbase',
+            name: 'First Base Player',
+            positions: ['1B'],
+            playerType: 'hitter',
+          },
+          {
+            _id: 'player-outfielder',
+            name: 'Outfielder',
+            positions: ['OF'],
+            playerType: 'hitter',
+          },
+          {
+            _id: 'player-sp',
+            name: 'Mock Player SP',
+            positions: ['SP'],
+            playerType: 'pitcher',
+          },
+        ],
+        pagination: { totalPages: 1 },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  it('renders the team name, calculated budget, and rows from roster slots', async () => {
+    await renderLeagueTeamTable(
       <ChakraProvider>
         <LeagueTeamTable
           team={['team-1', 'Alpha', 999]}
@@ -24,9 +107,9 @@ describe('LeagueTeamTable', () => {
             BENCH: 0,
           }}
           takenPlayers={[
-            ['Adley Rutschman', 'team-1', 'C-0', 20],
-            ['Freddie Freeman', 'team-1', '1B-0', 35],
-            ['Julio Rodriguez', 'team-1', 'OF-0', 40],
+            ['player-adley', 'team-1', 'C-0', 20],
+            ['player-freddie', 'team-1', '1B-0', 35],
+            ['player-julio', 'team-1', 'OF-0', 40],
           ]}
         />
       </ChakraProvider>,
@@ -45,8 +128,8 @@ describe('LeagueTeamTable', () => {
     expect(screen.getByDisplayValue('40')).toBeTruthy();
   });
 
-  it('shows empty rows when there are fewer players than roster slots', () => {
-    render(
+  it('shows empty rows when there are fewer players than roster slots', async () => {
+    await renderLeagueTeamTable(
       <ChakraProvider>
         <LeagueTeamTable
           team={['team-2', 'Beta', 0]}
@@ -64,7 +147,7 @@ describe('LeagueTeamTable', () => {
             UTIL: 0,
             BENCH: 1,
           }}
-          takenPlayers={[['William Contreras', 'team-2', 'C-0', 15]]}
+          takenPlayers={[['player-william', 'team-2', 'C-0', 15]]}
         />
       </ChakraProvider>,
     );
@@ -75,8 +158,8 @@ describe('LeagueTeamTable', () => {
     expect(screen.getByDisplayValue('15')).toBeTruthy();
   });
 
-  it('updates budget when a valid price is edited', () => {
-    render(
+  it('updates budget when a valid price is edited', async () => {
+    await renderLeagueTeamTable(
       <ChakraProvider>
         <LeagueTeamTable
           team={['team-3', 'Gamma', 0]}
@@ -95,8 +178,8 @@ describe('LeagueTeamTable', () => {
             BENCH: 0,
           }}
           takenPlayers={[
-            ['Player A', 'team-3', 'C-0', 10],
-            ['Player B', 'team-3', '1B-0', 20],
+            ['player-a', 'team-3', 'C-0', 10],
+            ['player-b', 'team-3', '1B-0', 20],
           ]}
         />
       </ChakraProvider>,
@@ -109,8 +192,8 @@ describe('LeagueTeamTable', () => {
     expect(inputs[0]?.value).toBe('25');
   });
 
-  it('does not allow a price above the team budget available for that slot', () => {
-    render(
+  it('does not allow a price above the team budget available for that slot', async () => {
+    await renderLeagueTeamTable(
       <ChakraProvider>
         <LeagueTeamTable
           team={['team-4', 'Delta', 0]}
@@ -129,8 +212,8 @@ describe('LeagueTeamTable', () => {
             BENCH: 0,
           }}
           takenPlayers={[
-            ['Player A', 'team-4', 'C-0', 10],
-            ['Player B', 'team-4', '1B-0', 20],
+            ['player-a', 'team-4', 'C-0', 10],
+            ['player-b', 'team-4', '1B-0', 20],
           ]}
         />
       </ChakraProvider>,
@@ -143,10 +226,10 @@ describe('LeagueTeamTable', () => {
     expect(screen.getByText('Budget: $70')).toBeTruthy();
   });
 
-  it('calls through price handlers when provided', () => {
+  it('calls through price handlers when provided', async () => {
     const onSaveChanges = vi.fn();
 
-    render(
+    await renderLeagueTeamTable(
       <ChakraProvider>
         <LeagueTeamTable
           team={['team-5', 'Echo', 0]}
@@ -164,7 +247,7 @@ describe('LeagueTeamTable', () => {
             UTIL: 0,
             BENCH: 0,
           }}
-          takenPlayers={[['Player A', 'team-5', 'C-0', 10]]}
+          takenPlayers={[['player-a', 'team-5', 'C-0', 10]]}
           onSaveChanges={onSaveChanges}
         />
       </ChakraProvider>,
@@ -179,12 +262,12 @@ describe('LeagueTeamTable', () => {
 
     expect(onSaveChanges).toHaveBeenCalledWith({
       teamName: 'Echo Updated',
-      rows: [{ rowId: 'C-0', playerName: 'Player A', price: 15 }],
+      rows: [{ rowId: 'C-0', playerId: 'player-a', price: 15 }],
     });
   });
 
-  it('keeps prices attached to their position slots instead of array order', () => {
-    render(
+  it('keeps prices attached to their position slots instead of array order', async () => {
+    await renderLeagueTeamTable(
       <ChakraProvider>
         <LeagueTeamTable
           team={['team-6', 'Foxtrot', 0]}
@@ -203,9 +286,9 @@ describe('LeagueTeamTable', () => {
             BENCH: 0,
           }}
           takenPlayers={[
-            ['Catcher Player', 'team-6', 'C-0', 100],
-            ['First Base Player', 'team-6', '1B-0', 35],
-            ['Outfielder', 'team-6', 'OF-0', 22],
+            ['player-catcher', 'team-6', 'C-0', 100],
+            ['player-firstbase', 'team-6', '1B-0', 35],
+            ['player-outfielder', 'team-6', 'OF-0', 22],
           ]}
         />
       </ChakraProvider>,
@@ -216,5 +299,46 @@ describe('LeagueTeamTable', () => {
     expect(screen.getByText('Outfielder')).toBeTruthy();
     expect(screen.getByDisplayValue('22')).toBeTruthy();
     expect(screen.queryByDisplayValue('100')).toBeNull();
+  });
+
+  it('filters dropdown options by position and allows all hitters in UTIL and all players in BENCH', async () => {
+    await renderLeagueTeamTable(
+      <ChakraProvider>
+        <LeagueTeamTable
+          team={['team-1', 'Alpha', 100]}
+          startingBudget={100}
+          rosterSlots={{
+            C: 1,
+            UTIL: 1,
+            BENCH: 1,
+            '1B': 0,
+            '2B': 0,
+            '3B': 0,
+            SS: 0,
+            OF: 0,
+            DH: 0,
+            SP: 0,
+            RP: 0,
+          }}
+          takenPlayers={[]}
+        />
+      </ChakraProvider>,
+    );
+
+    const selects = screen.getAllByRole('combobox') as HTMLSelectElement[];
+    expect(selects).toHaveLength(3);
+
+    // C row should only show C-eligible players
+    expect(selects[0]).toHaveTextContent('Adley Rutschman');
+    expect(selects[0]).not.toHaveTextContent('Mock Player SP');
+
+    // UTIL should show only hitters
+    expect(selects[1]).toHaveTextContent('Player A');
+    expect(selects[1]).toHaveTextContent('First Base Player');
+    expect(selects[1]).not.toHaveTextContent('Mock Player SP');
+
+    // BENCH should show everyone, including pitchers
+    expect(selects[2]).toHaveTextContent('Adley Rutschman');
+    expect(selects[2]).toHaveTextContent('Mock Player SP');
   });
 });

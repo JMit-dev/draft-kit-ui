@@ -6,6 +6,7 @@ import {
   Button,
   Flex,
   Input,
+  Select,
   Table,
   TableContainer,
   Tbody,
@@ -21,6 +22,7 @@ import type {
   TakenPlayer,
 } from '../types/leagues.types';
 import { DEFAULT_ROSTER_SLOTS, ROSTER_POSITIONS } from '../utils/leagueForm';
+import { apiClient } from '@/shared/utils/api-client';
 
 type LeagueTeamTableProps = {
   team: LeagueTeam;
@@ -31,7 +33,7 @@ type LeagueTeamTableProps = {
     teamName: string;
     rows: Array<{
       rowId: string;
-      playerName: string;
+      playerId: string;
       price: number;
     }>;
   }) => void;
@@ -41,9 +43,29 @@ type LeagueTeamTableProps = {
 type TeamTableRow = {
   rowId: string;
   position: string;
-  playerName: string;
+  playerId: string;
   price: string;
 };
+
+type Player = {
+  _id: string;
+  name: string;
+  positions: string[];
+  playerType: 'hitter' | 'pitcher';
+};
+
+type PlayersResponse = {
+  data?: Player[];
+  pagination?: {
+    totalPages?: number;
+  };
+};
+
+function isPlayerAllowedForRow(player: Player, position: string) {
+  if (position === 'BENCH') return true;
+  if (position === 'UTIL') return player.playerType === 'hitter';
+  return player.positions.includes(position);
+}
 
 function buildTeamRows(
   rosterSlots: RosterSlots,
@@ -59,7 +81,7 @@ function buildTeamRows(
       return {
         rowId,
         position,
-        playerName: player?.[0] ?? '',
+        playerId: player?.[0] ?? '',
         price: String(player?.[3] ?? 0),
       };
     }),
@@ -94,17 +116,71 @@ export default function LeagueTeamTable({
   );
   const [localTeamName, setLocalTeamName] = useState(teamName);
   const [localRows, setLocalRows] = useState(propRows);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [isLoadingPlayers, setIsLoadingPlayers] = useState(true);
 
   useEffect(() => {
     setLocalTeamName(teamName);
     setLocalRows(propRows);
   }, [propRows, teamName]);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadPlayers() {
+      try {
+        setIsLoadingPlayers(true);
+
+        const firstPage = await apiClient.get<PlayersResponse>('/api/players', {
+          params: { limit: 100, page: 1 },
+        });
+        const firstBatch = firstPage.data ?? [];
+        const totalPages = firstPage.pagination?.totalPages ?? 1;
+        const pageRequests: Promise<PlayersResponse>[] = [];
+
+        for (let page = 2; page <= totalPages; page += 1) {
+          pageRequests.push(
+            apiClient.get<PlayersResponse>('/api/players', {
+              params: { limit: 100, page },
+            }),
+          );
+        }
+
+        const remainingPages = await Promise.all(pageRequests);
+        const allPlayers = [
+          ...firstBatch,
+          ...remainingPages.flatMap((page) => page.data ?? []),
+        ];
+
+        if (!active) return;
+        setPlayers(allPlayers);
+      } catch {
+        if (active) {
+          setPlayers([]);
+        }
+      } finally {
+        if (active) {
+          setIsLoadingPlayers(false);
+        }
+      }
+    }
+
+    loadPlayers();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const rows = localRows;
   const currentBudget = calculateCurrentBudgetFromRows(startingBudget, rows);
   const isDirty =
     localTeamName !== teamName ||
-    rows.some((row, index) => row.price !== propRows[index]?.price);
+    rows.some(
+      (row, index) =>
+        row.price !== propRows[index]?.price ||
+        row.playerId !== propRows[index]?.playerId,
+    );
 
   function handleLocalPriceChange(rowIndex: number, value: string) {
     if (value !== '' && !/^\d+$/.test(value)) return;
@@ -125,12 +201,20 @@ export default function LeagueTeamTable({
     });
   }
 
+  function handlePlayerSelectionChange(rowIndex: number, value: string) {
+    setLocalRows((prev) =>
+      prev.map((row, index) =>
+        index === rowIndex ? { ...row, playerId: value } : row,
+      ),
+    );
+  }
+
   function handleSaveChanges() {
     onSaveChanges?.({
       teamName: localTeamName.trim() || teamName,
       rows: rows.map((row) => ({
         rowId: row.rowId,
-        playerName: row.playerName,
+        playerId: row.playerId,
         price: parsePrice(row.price),
       })),
     });
@@ -180,10 +264,38 @@ export default function LeagueTeamTable({
             </Tr>
           </Thead>
           <Tbody>
-            {rows.map((row) => (
+            {rows.map((row, rowIndex) => (
               <Tr key={row.rowId}>
                 <Td>{row.position}</Td>
-                <Td>{row.playerName || '-'}</Td>
+                <Td>
+                  <Select
+                    value={row.playerId}
+                    onChange={(e) =>
+                      handlePlayerSelectionChange(rowIndex, e.target.value)
+                    }
+                    size="sm"
+                    bg="white"
+                    placeholder={
+                      isLoadingPlayers ? 'Loading players...' : 'Select player'
+                    }
+                    isDisabled={isSaving || isLoadingPlayers}
+                  >
+                    {!isLoadingPlayers && players.length === 0 ? (
+                      <option value="" disabled>
+                        No players available
+                      </option>
+                    ) : null}
+                    {players
+                      .filter((player) =>
+                        isPlayerAllowedForRow(player, row.position),
+                      )
+                      .map((player) => (
+                        <option key={player._id} value={player._id}>
+                          {player.name}
+                        </option>
+                      ))}
+                  </Select>
+                </Td>
                 <Td isNumeric>
                   <Input
                     type="number"
@@ -191,11 +303,6 @@ export default function LeagueTeamTable({
                     max={startingBudget}
                     value={row.price}
                     onChange={(e) => {
-                      const rowIndex = rows.findIndex(
-                        (candidate) => candidate.rowId === row.rowId,
-                      );
-                      if (rowIndex < 0) return;
-
                       handleLocalPriceChange(rowIndex, e.target.value);
                     }}
                     textAlign="right"
