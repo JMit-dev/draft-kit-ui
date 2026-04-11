@@ -1,5 +1,8 @@
 vi.mock('@chakra-ui/react', async () => {
-  const actual = await vi.importActual<any>('@chakra-ui/react');
+  const actual =
+    await vi.importActual<typeof import('@chakra-ui/react')>(
+      '@chakra-ui/react',
+    );
   return {
     ...actual,
     useToast: () => vi.fn(),
