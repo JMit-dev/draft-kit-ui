@@ -64,6 +64,8 @@ describe('UpsertLeagueModal', () => {
         '2B': 1,
         '3B': 1,
         SS: 1,
+        CI: 0,
+        MI: 0,
         OF: 3,
         DH: 0,
         SP: 5,

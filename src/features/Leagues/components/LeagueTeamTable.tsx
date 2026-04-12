@@ -76,6 +76,10 @@ function formatPlayerDisplay(player: Player) {
 function isPlayerAllowedForRow(player: Player, position: string) {
   if (position === 'BENCH') return true;
   if (position === 'UTIL') return player.playerType === 'hitter';
+  if (position === 'CI')
+    return player.positions.includes('1B') || player.positions.includes('3B');
+  if (position === 'MI')
+    return player.positions.includes('2B') || player.positions.includes('SS');
   return player.positions.includes(position);
 }
 
@@ -84,7 +88,7 @@ function buildTeamRows(
   takenPlayers: TakenPlayer[],
 ): TeamTableRow[] {
   return ROSTER_POSITIONS.flatMap((position) =>
-    Array.from({ length: rosterSlots[position] }, (_, slotIndex) => {
+    Array.from({ length: rosterSlots[position] ?? 0 }, (_, slotIndex) => {
       const rowId = `${position}-${slotIndex}`;
       const player = takenPlayers.find(
         ([, , positionSlot]) => positionSlot === rowId,
