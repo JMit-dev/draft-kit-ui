@@ -175,6 +175,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
             BENCH: 0,
           },
           totalBudget: currentLeague.totalBudget ?? 0,
+          minorLeagueSlotsPerTeam: currentLeague.minorLeagueSlotsPerTeam,
           takenPlayers: nextTakenPlayers,
           teamsData: nextTeams,
         },
@@ -262,6 +263,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
                     rosterSlots={league.rosterSlots}
                     takenPlayers={takenPlayersForTeam}
                     startingBudget={league.totalBudget ?? 0}
+                    minorLeagueSlots={league.minorLeagueSlotsPerTeam ?? 0}
                     isSaving={upsertLeagueMutation.isPending}
                     onSaveChanges={({ teamName, rows }) => {
                       const nextTeams = displayTeams.map((currentTeam) =>

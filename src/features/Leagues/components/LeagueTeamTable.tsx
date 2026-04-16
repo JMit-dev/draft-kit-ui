@@ -29,6 +29,7 @@ type LeagueTeamTableProps = {
   rosterSlots?: RosterSlots;
   takenPlayers?: TakenPlayer[];
   startingBudget: number;
+  minorLeagueSlots?: number;
   onSaveChanges?: (payload: {
     teamName: string;
     rows: Array<{
@@ -86,14 +87,14 @@ function isPlayerAllowedForRow(player: Player, position: string) {
 function buildTeamRows(
   rosterSlots: RosterSlots,
   takenPlayers: TakenPlayer[],
+  minorLeagueSlots = 0,
 ): TeamTableRow[] {
-  return ROSTER_POSITIONS.flatMap((position) =>
+  const regularRows = ROSTER_POSITIONS.flatMap((position) =>
     Array.from({ length: rosterSlots[position] ?? 0 }, (_, slotIndex) => {
       const rowId = `${position}-${slotIndex}`;
       const player = takenPlayers.find(
         ([, , positionSlot]) => positionSlot === rowId,
       );
-
       return {
         rowId,
         position,
@@ -104,6 +105,23 @@ function buildTeamRows(
       };
     }),
   );
+
+  const milbRows = Array.from({ length: minorLeagueSlots }, (_, slotIndex) => {
+    const rowId = `MiLB-${slotIndex}`;
+    const player = takenPlayers.find(
+      ([, , positionSlot]) => positionSlot === rowId,
+    );
+    return {
+      rowId,
+      position: 'MiLB',
+      playerId: player?.[0] ?? '',
+      search: '',
+      team: '',
+      price: String(player?.[3] ?? 0),
+    };
+  });
+
+  return [...regularRows, ...milbRows];
 }
 
 function parsePrice(value: string): number {
@@ -124,14 +142,15 @@ export default function LeagueTeamTable({
   rosterSlots = DEFAULT_ROSTER_SLOTS,
   takenPlayers = [],
   startingBudget,
+  minorLeagueSlots = 0,
   onSaveChanges,
   isSaving = false,
 }: LeagueTeamTableProps) {
   const toast = useToast();
   const [, teamName] = team;
   const propRows = useMemo(
-    () => buildTeamRows(rosterSlots, takenPlayers),
-    [rosterSlots, takenPlayers],
+    () => buildTeamRows(rosterSlots, takenPlayers, minorLeagueSlots),
+    [rosterSlots, takenPlayers, minorLeagueSlots],
   );
   const [localTeamName, setLocalTeamName] = useState(teamName);
   const [localRows, setLocalRows] = useState(propRows);
@@ -296,7 +315,8 @@ export default function LeagueTeamTable({
         });
         const allowedPlayers = players.filter(
           (player) =>
-            isPlayerAllowedForRow(player, row.position) &&
+            (row.position === 'MiLB' ||
+              isPlayerAllowedForRow(player, row.position)) &&
             !unavailable.has(player._id),
         );
         const exactMatch = allowedPlayers.find(
@@ -412,7 +432,8 @@ export default function LeagueTeamTable({
                       .filter((player) => {
                         const unavailable = getUnavailablePlayerIds(rowIndex);
                         return (
-                          isPlayerAllowedForRow(player, row.position) &&
+                          (row.position === 'MiLB' ||
+                            isPlayerAllowedForRow(player, row.position)) &&
                           !unavailable.has(player._id)
                         );
                       })

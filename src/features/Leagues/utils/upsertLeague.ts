@@ -94,5 +94,7 @@ export async function upsertLeague(
     teams,
     isDefault: existingLeague?.isDefault ?? false,
     categoryWeights: existingLeague?.categoryWeights,
+    minorLeagueSlotsPerTeam:
+      input.minorLeagueSlotsPerTeam ?? existingLeague?.minorLeagueSlotsPerTeam,
   });
 }

@@ -48,6 +48,7 @@ export default function UpsertLeagueModal({
     leagueName: string;
     teams: string;
     totalBudget: string;
+    minorLeagueSlotsPerTeam: string;
     draftType: 'auction';
     rosterSlots: Record<keyof RosterSlots, string>;
   };
@@ -62,6 +63,9 @@ export default function UpsertLeagueModal({
       leagueName: initialLeague?.name ?? '',
       teams: String(teams),
       totalBudget: String(initialLeague?.totalBudget ?? 260),
+      minorLeagueSlotsPerTeam: String(
+        initialLeague?.minorLeagueSlotsPerTeam ?? 0,
+      ),
       draftType: 'auction',
       rosterSlots: ROSTER_POSITIONS.reduce(
         (acc, position) => {
@@ -86,15 +90,26 @@ export default function UpsertLeagueModal({
   const canSubmit = useMemo(() => {
     const parsedTeams = Number.parseInt(form.teams, 10);
     const parsedTotalBudget = Number.parseInt(form.totalBudget, 10);
+    const parsedMinorLeagueSlots = Number.parseInt(
+      form.minorLeagueSlotsPerTeam,
+      10,
+    );
 
     return (
       form.leagueName.trim().length > 0 &&
       !Number.isNaN(parsedTeams) &&
       parsedTeams > 1 &&
       !Number.isNaN(parsedTotalBudget) &&
-      parsedTotalBudget >= 0
+      parsedTotalBudget >= 0 &&
+      !Number.isNaN(parsedMinorLeagueSlots) &&
+      parsedMinorLeagueSlots >= 0
     );
-  }, [form.leagueName, form.teams, form.totalBudget]);
+  }, [
+    form.leagueName,
+    form.teams,
+    form.totalBudget,
+    form.minorLeagueSlotsPerTeam,
+  ]);
 
   function handleRosterSlotChange(position: keyof RosterSlots, value: string) {
     // Allow users to freely edit (including empty), without snapping values.
@@ -123,7 +138,16 @@ export default function UpsertLeagueModal({
 
     const parsedTeams = Number.parseInt(form.teams, 10);
     const parsedTotalBudget = Number.parseInt(form.totalBudget, 10);
-    if (Number.isNaN(parsedTeams) || Number.isNaN(parsedTotalBudget)) return;
+    const parsedMinorLeagueSlots = Number.parseInt(
+      form.minorLeagueSlotsPerTeam,
+      10,
+    );
+    if (
+      Number.isNaN(parsedTeams) ||
+      Number.isNaN(parsedTotalBudget) ||
+      Number.isNaN(parsedMinorLeagueSlots)
+    )
+      return;
 
     const rosterSlots = ROSTER_POSITIONS.reduce((acc, position) => {
       const raw = form.rosterSlots[position];
@@ -138,6 +162,7 @@ export default function UpsertLeagueModal({
       draftType: form.draftType,
       rosterSlots,
       totalBudget: Math.max(0, parsedTotalBudget),
+      minorLeagueSlotsPerTeam: Math.max(0, parsedMinorLeagueSlots),
     };
 
     try {
@@ -216,6 +241,26 @@ export default function UpsertLeagueModal({
                   const next = e.target.value;
                   if (next !== '' && !/^\d+$/.test(next)) return;
                   setForm((prev) => ({ ...prev, totalBudget: next }));
+                }}
+              />
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel htmlFor="minorLeagueSlotsPerTeam">
+                Minor League Players Per Team
+              </FormLabel>
+              <Input
+                id="minorLeagueSlotsPerTeam"
+                type="number"
+                min={0}
+                value={form.minorLeagueSlotsPerTeam}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  if (next !== '' && !/^\d+$/.test(next)) return;
+                  setForm((prev) => ({
+                    ...prev,
+                    minorLeagueSlotsPerTeam: next,
+                  }));
                 }}
               />
             </FormControl>
