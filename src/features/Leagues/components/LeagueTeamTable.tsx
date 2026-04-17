@@ -56,6 +56,7 @@ type Player = {
   positions: string[];
   playerType: 'hitter' | 'pitcher';
   team: string;
+  mlbDebutDate?: string;
 };
 
 type PlayersResponse = {
@@ -315,8 +316,9 @@ export default function LeagueTeamTable({
         });
         const allowedPlayers = players.filter(
           (player) =>
-            (row.position === 'MiLB' ||
-              isPlayerAllowedForRow(player, row.position)) &&
+            (row.position === 'MiLB'
+              ? !player.mlbDebutDate
+              : isPlayerAllowedForRow(player, row.position)) &&
             !unavailable.has(player._id),
         );
         const exactMatch = allowedPlayers.find(
@@ -432,8 +434,9 @@ export default function LeagueTeamTable({
                       .filter((player) => {
                         const unavailable = getUnavailablePlayerIds(rowIndex);
                         return (
-                          (row.position === 'MiLB' ||
-                            isPlayerAllowedForRow(player, row.position)) &&
+                          (row.position === 'MiLB'
+                            ? !player.mlbDebutDate
+                            : isPlayerAllowedForRow(player, row.position)) &&
                           !unavailable.has(player._id)
                         );
                       })
@@ -457,7 +460,7 @@ export default function LeagueTeamTable({
                     width="50px"
                     minWidth="50px"
                     marginLeft="auto"
-                    isDisabled={isSaving}
+                    isDisabled={isSaving || row.position === 'MiLB'}
                   />
                 </Td>
               </Tr>
