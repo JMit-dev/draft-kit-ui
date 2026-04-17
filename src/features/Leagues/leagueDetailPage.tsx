@@ -210,7 +210,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
         <Heading>{league.name}</Heading>
 
         <TableContainer borderWidth="1px" borderRadius="md">
-          <Table size="sm">
+          <Table size="sm" w="auto">
             <Thead>
               <Tr>
                 <Th>Field</Th>
@@ -218,10 +218,6 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
               </Tr>
             </Thead>
             <Tbody>
-              <Tr>
-                <Td>ID</Td>
-                <Td>{league._id}</Td>
-              </Tr>
               <Tr>
                 <Td>Teams</Td>
                 <Td>{teamCount ?? '-'}</Td>
@@ -237,6 +233,14 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
                     ? `$${league.totalBudget}`
                     : '-'}
                 </Td>
+              </Tr>
+              <Tr>
+                <Td>Batting Categories</Td>
+                <Td>{league.battingCategories?.join(', ') ?? '-'}</Td>
+              </Tr>
+              <Tr>
+                <Td>Pitching Categories</Td>
+                <Td>{league.pitchingCategories?.join(', ') ?? '-'}</Td>
               </Tr>
             </Tbody>
           </Table>
