@@ -111,7 +111,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   function updateTeamTakenPlayers(
     currentTakenPlayers: TakenPlayer[],
     teamId: string,
-    rows: Array<{ rowId: string; playerName: string; price: number }>,
+    rows: Array<{ rowId: string; playerId: string; price: number }>,
   ): TakenPlayer[] {
     const rowsBySlot = new Map(rows.map((row) => [row.rowId, row]));
     const updatedTakenPlayers: TakenPlayer[] = [];
@@ -132,7 +132,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
 
       handledSlots.add(positionSlot);
       updatedTakenPlayers.push([
-        playerId,
+        matchingRow.playerId || playerId,
         teamId,
         positionSlot,
         matchingRow.price,
@@ -140,8 +140,9 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
     });
 
     rows.forEach((row) => {
-      if (handledSlots.has(row.rowId) || row.price <= 0) return;
-      updatedTakenPlayers.push(['', teamId, row.rowId, row.price]);
+      if (handledSlots.has(row.rowId) || row.price <= 0 || !row.playerId)
+        return;
+      updatedTakenPlayers.push([row.playerId, teamId, row.rowId, row.price]);
     });
 
     return updatedTakenPlayers;
@@ -152,6 +153,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
     nextTakenPlayers: TakenPlayer[],
   ) {
     try {
+      if (!league) return;
       await upsertLeagueMutation.mutateAsync({
         input: {
           name: currentLeague.name,
@@ -163,6 +165,8 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
             '2B': 1,
             '3B': 1,
             SS: 1,
+            CI: 0,
+            MI: 0,
             OF: 3,
             DH: 0,
             SP: 5,

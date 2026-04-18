@@ -6,6 +6,8 @@ export const RosterSlotsSchema = z.object({
   '2B': z.number().int().min(0).default(1),
   '3B': z.number().int().min(0).default(1),
   SS: z.number().int().min(0).default(1),
+  CI: z.number().int().min(0).default(0),
+  MI: z.number().int().min(0).default(0),
   OF: z.number().int().min(0).default(3),
   DH: z.number().int().min(0).default(0),
   SP: z.number().int().min(0).default(5),
