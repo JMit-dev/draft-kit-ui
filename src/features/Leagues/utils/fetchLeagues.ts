@@ -1,6 +1,6 @@
-import { apiClient } from '@/shared/utils/api-client';
+import { backendClient } from '@/shared/utils/api-client';
 import { LeaguesResponse } from '../types/leagues.types';
 
 export async function fetchLeagues(): Promise<LeaguesResponse> {
-  return apiClient.get<LeaguesResponse>('/api/leagues');
+  return backendClient.get<LeaguesResponse>('/api/leagues');
 }

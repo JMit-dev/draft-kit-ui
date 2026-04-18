@@ -6,6 +6,11 @@ import {
 import { leaguesService } from '@/features/Leagues/server/leagues.service';
 import { seedDefaultLeagues } from '@/features/Leagues/utils/leagues.seed';
 import { connectDb } from '@/shared/server/connect-db';
+import { handleOptions, withCors } from '@/shared/server/cors';
+
+export async function OPTIONS(request: Request) {
+  return handleOptions(request);
+}
 
 export async function GET(request: Request) {
   try {
@@ -17,20 +22,29 @@ export async function GET(request: Request) {
     );
     const { leagues, pagination } = await leaguesService.getLeagues(filters);
 
-    return NextResponse.json({
-      success: true,
-      data: leagues,
-      pagination: {
-        total: pagination.total,
-        page: pagination.page,
-        limit: pagination.limit,
-        totalPages: Math.max(1, Math.ceil(pagination.total / pagination.limit)),
-      },
-    });
+    return withCors(
+      request,
+      NextResponse.json({
+        success: true,
+        data: leagues,
+        pagination: {
+          total: pagination.total,
+          page: pagination.page,
+          limit: pagination.limit,
+          totalPages: Math.max(
+            1,
+            Math.ceil(pagination.total / pagination.limit),
+          ),
+        },
+      }),
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Failed to fetch leagues';
-    return NextResponse.json({ success: false, message }, { status: 500 });
+    return withCors(
+      request,
+      NextResponse.json({ success: false, message }, { status: 500 }),
+    );
   }
 }
 
@@ -41,10 +55,16 @@ export async function POST(request: Request) {
     const payload = LeagueSchema.parse(await request.json());
     const league = await leaguesService.upsertLeague(payload);
 
-    return NextResponse.json({ success: true, data: league });
+    return withCors(
+      request,
+      NextResponse.json({ success: true, data: league }),
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Failed to save league';
-    return NextResponse.json({ success: false, message }, { status: 500 });
+    return withCors(
+      request,
+      NextResponse.json({ success: false, message }, { status: 500 }),
+    );
   }
 }

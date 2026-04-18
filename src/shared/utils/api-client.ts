@@ -1,3 +1,4 @@
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
 
@@ -136,5 +137,6 @@ class ApiClient {
   }
 }
 
-// Export singleton instance
-export const apiClient = new ApiClient(API_URL, API_KEY);
+export const backendClient = new ApiClient(BACKEND_URL, API_KEY);
+export const externalApiClient = new ApiClient(API_URL, API_KEY);
+export const apiClient = backendClient;

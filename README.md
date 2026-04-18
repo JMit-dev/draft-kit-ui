@@ -24,6 +24,9 @@ npm install
 # Environment
 cp .env.example .env.local
 
+# NEXT_PUBLIC_BACKEND_URL is for this app's Next API routes
+# NEXT_PUBLIC_API_URL is for the external player API
+
 # Run
 npm run dev              # Dev server (http://localhost:3000)
 npm run build            # Production build

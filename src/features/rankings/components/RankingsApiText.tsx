@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Box, Text } from '@chakra-ui/react';
-import { api } from '@/lib/axios';
+import { externalApiClient } from '@/shared/utils/api-client';
 
 type Player = {
   _id: string;
@@ -25,7 +25,12 @@ export default function RankingsApiText() {
 
     async function loadPlayers() {
       try {
-        const response = (await api.get('/players?limit=1')) as PlayersResponse;
+        const response = await externalApiClient.get<PlayersResponse>(
+          '/api/players',
+          {
+            params: { limit: 1 },
+          },
+        );
         const players = response.data;
 
         if (!active || !players || players.length === 0) {
