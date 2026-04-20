@@ -1,6 +1,7 @@
 # Draft Kit UI
 
 Next.js frontend for fantasy baseball draft management and player rankings.
+The extracted backend now lives in `draft-kit-ui-backend/`.
 
 ## Libraries
 
@@ -34,6 +35,8 @@ npm start                # Production server
 npm test                 # Run tests
 npm run lint             # Lint code
 ```
+
+Set `NEXT_PUBLIC_API_URL` to the backend deployment or local backend app.
 
 ## Adding a Feature
 
