@@ -1,4 +1,4 @@
-import { backendClient } from '@/shared/utils/api-client';
+import { localApiClient } from '@/shared/utils/api-client';
 import type {
   NotebookResponse,
   UpdateNotebookInput,
@@ -8,5 +8,5 @@ export async function updateNotebook(
   id: string,
   updates: UpdateNotebookInput,
 ): Promise<NotebookResponse> {
-  return backendClient.put<NotebookResponse>(`/api/notebooks/${id}`, updates);
+  return localApiClient.put<NotebookResponse>(`/api/notebooks/${id}`, updates);
 }

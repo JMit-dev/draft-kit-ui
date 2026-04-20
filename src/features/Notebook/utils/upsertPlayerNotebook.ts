@@ -1,4 +1,4 @@
-import { backendClient } from '@/shared/utils/api-client';
+import { localApiClient } from '@/shared/utils/api-client';
 import type { NotebookResponse } from '../types/notebook.types';
 
 type UpsertPlayerNotebookInput = {
@@ -12,7 +12,7 @@ export async function upsertPlayerNotebook({
   playerName,
   content,
 }: UpsertPlayerNotebookInput): Promise<NotebookResponse> {
-  return backendClient.post<NotebookResponse>('/api/notebooks', {
+  return localApiClient.post<NotebookResponse>('/api/notebooks', {
     kind: 'player',
     name: playerName,
     playerId,

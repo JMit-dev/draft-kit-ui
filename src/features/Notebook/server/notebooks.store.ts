@@ -16,6 +16,7 @@ export type StoredNotebook = {
 export type NotebookFilters = {
   kind?: 'custom' | 'player';
   playerName?: string;
+  playerId?: string;
 };
 
 type CreateNotebookInput = {
@@ -113,6 +114,10 @@ export async function listNotebooks(
         return false;
       }
 
+      if (filters.playerId && notebook.playerId !== filters.playerId) {
+        return false;
+      }
+
       return true;
     })
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
@@ -131,10 +136,12 @@ export async function createNotebook(
   const notebooks = await readNotebooks();
   const now = new Date().toISOString();
 
-  if (input.kind === 'player' && input.playerName) {
+  if (input.kind === 'player' && input.playerId) {
     const existingIndex = notebooks.findIndex(
       (notebook) =>
-        notebook.kind === 'player' && notebook.playerName === input.playerName,
+        notebook.kind === 'player' &&
+        (notebook.playerId === input.playerId ||
+          (!notebook.playerId && notebook.playerName === input.playerName)),
     );
 
     if (existingIndex >= 0) {

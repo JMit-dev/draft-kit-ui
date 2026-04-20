@@ -62,6 +62,33 @@ describe('notebooks.store', () => {
     expect(notebooks[0].content).toBe('Cleared to play');
   });
 
+  it('upserts player notebooks by player id and no longer depends on name matching', async () => {
+    const first = await createNotebook({
+      kind: 'player',
+      name: 'Ronald Acuna Jr.',
+      playerName: 'Ronald Acuna Jr.',
+      playerId: '660670',
+      content: 'Track recovery timeline',
+    });
+
+    const second = await createNotebook({
+      kind: 'player',
+      name: 'Ronald Acuna',
+      playerName: 'Ronald Acuna',
+      playerId: '660670',
+      content: 'Ready for full baseball activity',
+    });
+
+    expect(second._id).toBe(first._id);
+
+    const notebooks = await listNotebooks({
+      kind: 'player',
+      playerId: '660670',
+    });
+    expect(notebooks).toHaveLength(1);
+    expect(notebooks[0]?.content).toBe('Ready for full baseball activity');
+  });
+
   it('updates and deletes notebooks by id', async () => {
     const notebook = await createNotebook({
       kind: 'custom',

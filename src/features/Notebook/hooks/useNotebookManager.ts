@@ -67,9 +67,9 @@ export function useNotebookManager() {
       (notebook) => notebook.kind === 'custom',
     );
     const playerNotebooks = notebooks
-      .filter((notebook) => notebook.kind === 'player' && notebook.playerName)
+      .filter((notebook) => notebook.kind === 'player' && notebook.playerId)
       .reduce<Record<string, Notebook>>((accumulator, notebook) => {
-        accumulator[notebook.playerName!] = notebook;
+        accumulator[notebook.playerId!] = notebook;
         return accumulator;
       }, {});
 
@@ -92,8 +92,11 @@ export function useNotebookManager() {
   );
 
   const selectedItemName = selectedPlayerName ?? selectedNotebook?.name ?? null;
+  const selectedPlayerNote = selectedPlayer?._id
+    ? localPlayerNotes[selectedPlayer._id]
+    : null;
   const selectedItemContent = selectedPlayerName
-    ? (localPlayerNotes[selectedPlayerName]?.content ?? '')
+    ? (selectedPlayerNote?.content ?? '')
     : (selectedNotebook?.content ?? '');
 
   const scheduleNotebookSave = (id: string, updates: PendingNotebookUpdate) => {
@@ -126,25 +129,42 @@ export function useNotebookManager() {
   };
 
   const schedulePlayerNoteSave = (player: Player, content: string) => {
-    clearTimeout(playerSaveTimeoutsRef.current[player.name]);
+    clearTimeout(playerSaveTimeoutsRef.current[player._id]);
 
-    playerSaveTimeoutsRef.current[player.name] = setTimeout(async () => {
+    playerSaveTimeoutsRef.current[player._id] = setTimeout(async () => {
       try {
+        const trimmedContent = content.trim();
+        const existingNotebook = localPlayerNotes[player._id];
+
+        if (!trimmedContent) {
+          if (existingNotebook?._id) {
+            await deleteNotebookMutation.mutateAsync(existingNotebook._id);
+          }
+
+          setLocalPlayerNotes((current) => {
+            const next = { ...current };
+            delete next[player._id];
+            return next;
+          });
+          setSaveError(null);
+          return;
+        }
+
         const response = await upsertPlayerNotebookMutation.mutateAsync({
           playerId: player._id,
           playerName: player.name,
-          content,
+          content: trimmedContent,
         });
 
         setLocalPlayerNotes((current) => ({
           ...current,
-          [player.name]: response.data,
+          [player._id]: response.data,
         }));
         setSaveError(null);
       } catch {
         setSaveError(`Unable to save note for ${player.name}.`);
       } finally {
-        delete playerSaveTimeoutsRef.current[player.name];
+        delete playerSaveTimeoutsRef.current[player._id];
       }
     }, 500);
   };
@@ -212,19 +232,29 @@ export function useNotebookManager() {
       return;
     }
 
-    setLocalPlayerNotes((current) => ({
-      ...current,
-      [playerName]:
-        current[playerName] ?? buildEmptyPlayerNotebook(activePlayer, content),
-    }));
-    setLocalPlayerNotes((current) => ({
-      ...current,
-      [playerName]: {
-        ...(current[playerName] ??
-          buildEmptyPlayerNotebook(activePlayer, content)),
-        content,
-      },
-    }));
+    const existingNotebook = localPlayerNotes[activePlayer._id];
+    const trimmedContent = content.trim();
+
+    if (!trimmedContent && !existingNotebook) {
+      return;
+    }
+
+    setLocalPlayerNotes((current) => {
+      if (!trimmedContent && current[activePlayer._id]) {
+        const next = { ...current };
+        delete next[activePlayer._id];
+        return next;
+      }
+
+      return {
+        ...current,
+        [activePlayer._id]: {
+          ...(current[activePlayer._id] ??
+            buildEmptyPlayerNotebook(activePlayer, content)),
+          content,
+        },
+      };
+    });
     schedulePlayerNoteSave(activePlayer, content);
   };
 

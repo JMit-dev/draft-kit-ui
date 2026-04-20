@@ -18,12 +18,14 @@ const CreateNotebookSchema = z.object({
 const NotebookFiltersSchema = z.object({
   kind: NotebookKindSchema.optional(),
   playerName: z.string().trim().min(1).optional(),
+  playerId: z.string().trim().min(1).optional(),
 });
 
 export async function GET(request: NextRequest) {
   const filters = NotebookFiltersSchema.parse({
     kind: request.nextUrl.searchParams.get('kind') ?? undefined,
     playerName: request.nextUrl.searchParams.get('playerName') ?? undefined,
+    playerId: request.nextUrl.searchParams.get('playerId') ?? undefined,
   });
   const notebooks = await listNotebooks(filters);
 
