@@ -22,7 +22,7 @@ import type {
   TakenPlayer,
 } from '../types/leagues.types';
 import { DEFAULT_ROSTER_SLOTS, ROSTER_POSITIONS } from '../utils/leagueForm';
-import { apiClient } from '@/shared/utils/api-client';
+import { externalApiClient } from '@/shared/utils/api-client';
 
 type LeagueTeamTableProps = {
   team: LeagueTeam;
@@ -187,16 +187,19 @@ export default function LeagueTeamTable({
       try {
         setIsLoadingPlayers(true);
 
-        const firstPage = await apiClient.get<PlayersResponse>('/api/players', {
-          params: { limit: 100, page: 1 },
-        });
+        const firstPage = await externalApiClient.get<PlayersResponse>(
+          '/api/players',
+          {
+            params: { limit: 100, page: 1 },
+          },
+        );
         const firstBatch = firstPage.data ?? [];
         const totalPages = firstPage.pagination?.totalPages ?? 1;
         const pageRequests: Promise<PlayersResponse>[] = [];
 
         for (let page = 2; page <= totalPages; page += 1) {
           pageRequests.push(
-            apiClient.get<PlayersResponse>('/api/players', {
+            externalApiClient.get<PlayersResponse>('/api/players', {
               params: { limit: 100, page },
             }),
           );

@@ -12,7 +12,7 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
-import { apiClient } from '@/shared/utils/api-client';
+import { externalApiClient } from '@/shared/utils/api-client';
 
 const TEAMS = [
   'ARI',
@@ -166,13 +166,16 @@ export default function DepthChartsPage() {
 
     async function loadTeam() {
       try {
-        const firstPage = await apiClient.get<PlayersResponse>('/api/players', {
-          params: { team: selectedTeam, limit: 100, page: 1 },
-        });
+        const firstPage = await externalApiClient.get<PlayersResponse>(
+          '/api/players',
+          {
+            params: { team: selectedTeam, limit: 100, page: 1 },
+          },
+        );
         const totalPages = firstPage.pagination?.totalPages ?? 1;
         const rest = await Promise.all(
           Array.from({ length: totalPages - 1 }, (_, i) =>
-            apiClient.get<PlayersResponse>('/api/players', {
+            externalApiClient.get<PlayersResponse>('/api/players', {
               params: { team: selectedTeam, limit: 100, page: i + 2 },
             }),
           ),
