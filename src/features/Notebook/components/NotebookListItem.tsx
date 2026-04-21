@@ -7,14 +7,16 @@ import type { NotebookListEntry } from '../types/notebook.types';
 type NotebookListItemProps = {
   notebook: NotebookListEntry;
   isSelected: boolean;
-  onRename: (id: number, name: string) => void;
-  onOpen: (id: number) => void;
+  onRename: (id: string, name: string) => void;
+  onDelete: (id: string) => void;
+  onOpen: (id: string) => void;
 };
 
 export default function NotebookListItem({
   notebook,
   isSelected,
   onRename,
+  onDelete,
   onOpen,
 }: NotebookListItemProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -22,7 +24,7 @@ export default function NotebookListItem({
 
   const commitRename = () => {
     const trimmedName = draftName.trim();
-    onRename(notebook.id, trimmedName || notebook.name);
+    onRename(notebook._id, trimmedName || notebook.name);
     setDraftName(trimmedName || notebook.name);
     setIsEditing(false);
   };
@@ -42,7 +44,7 @@ export default function NotebookListItem({
       _hover={{ bg: 'gray.50', borderColor: 'gray.400' }}
       transition="all 0.15s ease"
       cursor="default"
-      onDoubleClick={() => onOpen(notebook.id)}
+      onDoubleClick={() => onOpen(notebook._id)}
     >
       {isEditing ? (
         <Input
@@ -64,18 +66,31 @@ export default function NotebookListItem({
       )}
 
       {!isEditing ? (
-        <Button
-          size="sm"
-          variant="ghost"
-          color="gray.600"
-          onClick={(event) => {
-            event.stopPropagation();
-            setDraftName(notebook.name);
-            setIsEditing(true);
-          }}
-        >
-          Rename
-        </Button>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Button
+            size="sm"
+            variant="ghost"
+            color="gray.600"
+            onClick={(event) => {
+              event.stopPropagation();
+              setDraftName(notebook.name);
+              setIsEditing(true);
+            }}
+          >
+            Rename
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            color="red.500"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(notebook._id);
+            }}
+          >
+            Delete
+          </Button>
+        </Box>
       ) : null}
     </Box>
   );

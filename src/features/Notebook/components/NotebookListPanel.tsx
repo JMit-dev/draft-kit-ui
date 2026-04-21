@@ -6,10 +6,13 @@ import NotebookListItem from './NotebookListItem';
 
 type NotebookListPanelProps = {
   notebooks: NotebookListEntry[];
-  selectedNotebookId: number | null;
+  selectedNotebookId: string | null;
   onAddNotebook: () => void;
-  onRenameNotebook: (id: number, name: string) => void;
-  onOpenNotebook: (id: number) => void;
+  onRenameNotebook: (id: string, name: string) => void;
+  onDeleteNotebook: (id: string) => void;
+  onOpenNotebook: (id: string) => void;
+  isLoading?: boolean;
+  error?: string | null;
 };
 
 export default function NotebookListPanel({
@@ -17,7 +20,10 @@ export default function NotebookListPanel({
   selectedNotebookId,
   onAddNotebook,
   onRenameNotebook,
+  onDeleteNotebook,
   onOpenNotebook,
+  isLoading,
+  error,
 }: NotebookListPanelProps) {
   return (
     <Box flex="1">
@@ -34,12 +40,15 @@ export default function NotebookListPanel({
       </Flex>
 
       <VStack align="stretch" spacing={5}>
+        {isLoading ? <Box color="gray.500">Loading notebooks...</Box> : null}
+        {error ? <Box color="red.500">{error}</Box> : null}
         {notebooks.map((notebook) => (
           <NotebookListItem
-            key={notebook.id}
+            key={notebook._id}
             notebook={notebook}
-            isSelected={notebook.id === selectedNotebookId}
+            isSelected={notebook._id === selectedNotebookId}
             onRename={onRenameNotebook}
+            onDelete={onDeleteNotebook}
             onOpen={onOpenNotebook}
           />
         ))}
