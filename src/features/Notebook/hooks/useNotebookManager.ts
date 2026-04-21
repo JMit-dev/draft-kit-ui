@@ -57,6 +57,9 @@ export function useNotebookManager() {
   const updateNotebookMutation = useUpdateNotebook();
   const upsertPlayerNotebookMutation = useUpsertPlayerNotebook();
 
+  const getMutationErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message ? error.message : fallback;
+
   useEffect(() => {
     if (!notebooksQuery.data?.data) {
       return;
@@ -119,8 +122,10 @@ export function useNotebookManager() {
           ),
         );
         setSaveError(null);
-      } catch {
-        setSaveError('Unable to save notebook changes.');
+      } catch (error) {
+        setSaveError(
+          getMutationErrorMessage(error, 'Unable to save notebook changes.'),
+        );
       } finally {
         delete notebookPendingUpdatesRef.current[id];
         delete notebookSaveTimeoutsRef.current[id];
@@ -161,8 +166,13 @@ export function useNotebookManager() {
           [player._id]: response.data,
         }));
         setSaveError(null);
-      } catch {
-        setSaveError(`Unable to save note for ${player.name}.`);
+      } catch (error) {
+        setSaveError(
+          getMutationErrorMessage(
+            error,
+            `Unable to save note for ${player.name}.`,
+          ),
+        );
       } finally {
         delete playerSaveTimeoutsRef.current[player._id];
       }
@@ -179,8 +189,10 @@ export function useNotebookManager() {
       setSelectedPlayer(null);
       setSelectedNotebookId(notebook._id);
       setSaveError(null);
-    } catch {
-      setSaveError('Unable to create a notebook.');
+    } catch (error) {
+      setSaveError(
+        getMutationErrorMessage(error, 'Unable to create a notebook.'),
+      );
     }
   };
 
@@ -210,8 +222,10 @@ export function useNotebookManager() {
       }
 
       setSaveError(null);
-    } catch {
-      setSaveError('Unable to delete notebook.');
+    } catch (error) {
+      setSaveError(
+        getMutationErrorMessage(error, 'Unable to delete notebook.'),
+      );
     }
   };
 
@@ -285,7 +299,10 @@ export function useNotebookManager() {
     selectedPlayer,
     isLoadingNotebooks: notebooksQuery.isLoading,
     notebooksError: notebooksQuery.isError
-      ? 'Unable to load notebook data from the backend.'
+      ? getMutationErrorMessage(
+          notebooksQuery.error,
+          'Unable to load notebook data from the backend.',
+        )
       : null,
     saveError,
     addNotebook,
