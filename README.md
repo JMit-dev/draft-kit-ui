@@ -25,7 +25,8 @@ npm install
 # Environment
 cp .env.example .env.local
 
-# NEXT_PUBLIC_BACKEND_URL is for this app's Next API routes to reach the Draft Kit backend
+# BACKEND_URL is preferred for this app's Next API routes to reach the Draft Kit backend
+# NEXT_PUBLIC_BACKEND_URL remains supported as a fallback
 # NEXT_PUBLIC_API_URL is for the external player API
 
 # Run
@@ -36,7 +37,8 @@ npm test                 # Run tests
 npm run lint             # Lint code
 ```
 
-Set `NEXT_PUBLIC_BACKEND_URL` to the Draft Kit backend deployment or local backend app.
+Set `BACKEND_URL` to the Draft Kit backend deployment or local backend app.
+`NEXT_PUBLIC_BACKEND_URL` is still supported, but `BACKEND_URL` avoids exposing that value to the browser bundle.
 Set `NEXT_PUBLIC_API_URL` to the external player/stats API.
 
 ## Adding a Feature

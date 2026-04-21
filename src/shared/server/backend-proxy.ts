@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 
 function getBackendUrl(): string {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const backendUrl =
+    process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
 
   if (!backendUrl) {
-    throw new Error('NEXT_PUBLIC_BACKEND_URL is required');
+    throw new Error(
+      'BACKEND_URL or NEXT_PUBLIC_BACKEND_URL is required for notebook proxying',
+    );
   }
 
   return backendUrl.replace(/\/+$/, '');
@@ -20,7 +23,7 @@ function buildHeaders(request: Request): HeadersInit {
     headers['Content-Type'] = contentType;
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+  const apiKey = process.env.API_KEY || process.env.NEXT_PUBLIC_API_KEY;
   if (apiKey) {
     headers['x-api-key'] = apiKey;
   }
@@ -32,29 +35,38 @@ export async function proxyBackendRequest(
   request: Request,
   endpoint: string,
 ): Promise<NextResponse> {
-  const backendUrl = new URL(`${getBackendUrl()}${endpoint}`);
-  const incomingUrl = new URL(request.url);
-  backendUrl.search = incomingUrl.search;
+  try {
+    const backendUrl = new URL(`${getBackendUrl()}${endpoint}`);
+    const incomingUrl = new URL(request.url);
+    backendUrl.search = incomingUrl.search;
 
-  const response = await fetch(backendUrl.toString(), {
-    method: request.method,
-    headers: buildHeaders(request),
-    body:
-      request.method === 'GET' ||
-      request.method === 'DELETE' ||
-      request.method === 'HEAD'
-        ? undefined
-        : await request.text(),
-    cache: 'no-store',
-  });
+    const response = await fetch(backendUrl.toString(), {
+      method: request.method,
+      headers: buildHeaders(request),
+      body:
+        request.method === 'GET' ||
+        request.method === 'DELETE' ||
+        request.method === 'HEAD'
+          ? undefined
+          : await request.text(),
+      cache: 'no-store',
+    });
 
-  const responseText = await response.text();
+    const responseText = await response.text();
 
-  return new NextResponse(responseText, {
-    status: response.status,
-    headers: {
-      'Content-Type':
-        response.headers.get('content-type') ?? 'application/json',
-    },
-  });
+    return new NextResponse(responseText, {
+      status: response.status,
+      headers: {
+        'Content-Type':
+          response.headers.get('content-type') ?? 'application/json',
+      },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Unable to reach the backend service';
+
+    return NextResponse.json({ success: false, message }, { status: 502 });
+  }
 }

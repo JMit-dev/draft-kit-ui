@@ -6,6 +6,41 @@ interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
 }
 
+async function getErrorMessage(response: Response): Promise<string> {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    try {
+      const payload = (await response.json()) as {
+        message?: string;
+        error?: string;
+      };
+
+      if (payload.message) {
+        return payload.message;
+      }
+
+      if (payload.error) {
+        return payload.error;
+      }
+    } catch {
+      // Fall through to the default error message.
+    }
+  } else {
+    try {
+      const text = await response.text();
+
+      if (text.trim()) {
+        return text;
+      }
+    } catch {
+      // Fall through to the default error message.
+    }
+  }
+
+  return `API Error: ${response.status} ${response.statusText}`.trim();
+}
+
 class ApiClient {
   private baseURL: string;
   private apiKey?: string;
@@ -75,7 +110,7 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      throw new Error(await getErrorMessage(response));
     }
 
     return response.json();
@@ -95,7 +130,7 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      throw new Error(await getErrorMessage(response));
     }
 
     return response.json();
@@ -115,7 +150,7 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      throw new Error(await getErrorMessage(response));
     }
 
     return response.json();
@@ -130,7 +165,7 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      throw new Error(await getErrorMessage(response));
     }
 
     return response.json();
