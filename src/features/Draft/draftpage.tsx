@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Box, Flex } from '@chakra-ui/react';
 import type { League } from '@/features/Leagues/types/leagues.types';
 import DraftLeftPanel from './components/left/DraftLeftPanel';
+import DraftMiddlePanel from './components/middle/DraftMiddlePanel';
 import DraftRightPanel from './components/right/DraftRightPanel';
 
 export default function DraftPage() {
@@ -25,7 +26,10 @@ export default function DraftPage() {
         flexShrink={0}
         borderRightWidth="1px"
         borderColor="gray.200"
-      />
+        overflow="hidden"
+      >
+        <DraftMiddlePanel />
+      </Box>
       <Box flex={1} minH={0} overflowY="auto">
         <DraftRightPanel league={selectedLeague} />
       </Box>
