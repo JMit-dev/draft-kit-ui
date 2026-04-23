@@ -6,7 +6,11 @@ import { useLeagues } from '@/features/Leagues/hooks/useLeagues';
 import type { League } from '@/features/Leagues/types/leagues.types';
 import LeagueInfo from './LeagueInfo';
 
-export default function DraftLeftPanel() {
+type Props = {
+  onLeagueChange: (league: League | null) => void;
+};
+
+export default function DraftLeftPanel({ onLeagueChange }: Props) {
   const { data, isLoading } = useLeagues();
   const leagues = data?.data ?? [];
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
@@ -14,6 +18,7 @@ export default function DraftLeftPanel() {
   function handleLeagueChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const league = leagues.find((l) => l._id === e.target.value) ?? null;
     setSelectedLeague(league);
+    onLeagueChange(league);
   }
 
   return (

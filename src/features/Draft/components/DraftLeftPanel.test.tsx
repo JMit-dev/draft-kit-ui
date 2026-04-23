@@ -72,7 +72,7 @@ import { useLeagues } from '@/features/Leagues/hooks/useLeagues';
 function renderPanel() {
   render(
     <ChakraProvider>
-      <DraftLeftPanel />
+      <DraftLeftPanel onLeagueChange={vi.fn()} />
     </ChakraProvider>,
   );
 }

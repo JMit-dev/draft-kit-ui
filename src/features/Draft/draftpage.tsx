@@ -1,7 +1,14 @@
+'use client';
+
+import { useState } from 'react';
 import { Box, Flex } from '@chakra-ui/react';
+import type { League } from '@/features/Leagues/types/leagues.types';
 import DraftLeftPanel from './components/DraftLeftPanel';
+import DraftRightPanel from './components/DraftRightPanel';
 
 export default function DraftPage() {
+  const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
+
   return (
     <Flex h="100vh" overflow="hidden">
       <Box
@@ -9,8 +16,9 @@ export default function DraftPage() {
         flexShrink={0}
         borderRightWidth="1px"
         borderColor="gray.200"
+        overflowY="auto"
       >
-        <DraftLeftPanel />
+        <DraftLeftPanel onLeagueChange={setSelectedLeague} />
       </Box>
       <Box
         flexBasis="50%"
@@ -18,7 +26,9 @@ export default function DraftPage() {
         borderRightWidth="1px"
         borderColor="gray.200"
       />
-      <Box flex={1} />
+      <Box flex={1} minH={0} overflowY="auto">
+        <DraftRightPanel league={selectedLeague} />
+      </Box>
     </Flex>
   );
 }
