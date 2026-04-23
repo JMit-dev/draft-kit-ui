@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { Box, Flex } from '@chakra-ui/react';
 import type { League } from '@/features/Leagues/types/leagues.types';
-import DraftLeftPanel from './components/DraftLeftPanel';
-import DraftRightPanel from './components/DraftRightPanel';
+import DraftLeftPanel from './components/left/DraftLeftPanel';
+import DraftRightPanel from './components/right/DraftRightPanel';
 
 export default function DraftPage() {
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
