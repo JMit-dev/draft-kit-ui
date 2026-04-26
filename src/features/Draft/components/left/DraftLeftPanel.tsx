@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Divider, Flex, Select, Spinner } from '@chakra-ui/react';
 import { useLeagues } from '@/features/Leagues/hooks/useLeagues';
+import { useLeague } from '@/features/Leagues/hooks/useLeague';
 import type { League } from '@/features/Leagues/types/leagues.types';
 import LeagueInfo from './LeagueInfo';
 
@@ -13,12 +14,26 @@ type Props = {
 export default function DraftLeftPanel({ onLeagueChange }: Props) {
   const { data, isLoading } = useLeagues();
   const leagues = data?.data ?? [];
-  const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string>('');
+  const { data: leagueData } = useLeague(selectedLeagueId || undefined);
+  const lastEmittedLeagueId = useRef<string | null>(null);
+
+  useEffect(() => {
+    const league = leagueData?.data;
+    if (!league) return;
+
+    // Only propagate on initial selection / league switch, not on background refetches.
+    // This prevents refetches from overwriting optimistic draft pick state in DraftPage.
+    if (league._id === lastEmittedLeagueId.current) return;
+    lastEmittedLeagueId.current = league._id;
+    onLeagueChange(league);
+  }, [leagueData?.data, onLeagueChange]);
 
   function handleLeagueChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const league = leagues.find((l) => l._id === e.target.value) ?? null;
-    setSelectedLeague(league);
-    onLeagueChange(league);
+    const id = e.target.value;
+    setSelectedLeagueId(id);
+    lastEmittedLeagueId.current = null;
+    if (!id) onLeagueChange(null);
   }
 
   return (
@@ -29,6 +44,7 @@ export default function DraftLeftPanel({ onLeagueChange }: Props) {
         <Select
           placeholder="Select a league"
           size="sm"
+          value={selectedLeagueId}
           onChange={handleLeagueChange}
         >
           {leagues.map((league) => (
@@ -39,7 +55,7 @@ export default function DraftLeftPanel({ onLeagueChange }: Props) {
         </Select>
       )}
       <Divider />
-      <LeagueInfo league={selectedLeague} />
+      <LeagueInfo league={leagueData?.data ?? null} />
     </Flex>
   );
 }

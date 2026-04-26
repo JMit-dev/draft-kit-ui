@@ -11,10 +11,20 @@ import { useUpsertLeague } from '@/features/Leagues/hooks/useUpsertLeague';
 import DraftLeftPanel from './components/left/DraftLeftPanel';
 import DraftMiddlePanel from './components/middle/DraftMiddlePanel';
 import DraftRightPanel from './components/right/DraftRightPanel';
+import { ensureLeagueHasDraftPicks } from './utils/draftPicks';
 
 export default function DraftPage() {
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const upsertLeagueMutation = useUpsertLeague();
+
+  function handleLeagueChange(league: League | null) {
+    if (!league) {
+      setSelectedLeague(null);
+      return;
+    }
+
+    setSelectedLeague(ensureLeagueHasDraftPicks(league));
+  }
 
   function handleUndo() {
     if (!selectedLeague) return;
@@ -106,7 +116,7 @@ export default function DraftPage() {
         borderColor="gray.200"
         overflowY="auto"
       >
-        <DraftLeftPanel onLeagueChange={setSelectedLeague} />
+        <DraftLeftPanel onLeagueChange={handleLeagueChange} />
       </Box>
       <Box
         flexBasis="50%"

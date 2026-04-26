@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   Box,
   Divider,
@@ -40,6 +41,15 @@ function EmptyState() {
 export default function LeagueInfo({ league }: Props) {
   if (!league) return <EmptyState />;
 
+  const battingCategories = useMemo(
+    () => Array.from(new Set(league.battingCategories)),
+    [league.battingCategories],
+  );
+  const pitchingCategories = useMemo(
+    () => Array.from(new Set(league.pitchingCategories)),
+    [league.pitchingCategories],
+  );
+
   return (
     <Flex direction="column" gap={4} p={4}>
       <Box>
@@ -71,8 +81,8 @@ export default function LeagueInfo({ league }: Props) {
       <Box>
         <SectionLabel>Hitting Categories</SectionLabel>
         <Wrap mt={2} spacing={1}>
-          {league.battingCategories.map((cat) => (
-            <WrapItem key={cat}>
+          {battingCategories.map((cat) => (
+            <WrapItem key={`bat-${cat}`}>
               <Tag size="sm" colorScheme="green" variant="subtle">
                 {cat}
               </Tag>
@@ -84,8 +94,8 @@ export default function LeagueInfo({ league }: Props) {
       <Box>
         <SectionLabel>Pitching Categories</SectionLabel>
         <Wrap mt={2} spacing={1}>
-          {league.pitchingCategories.map((cat) => (
-            <WrapItem key={cat}>
+          {pitchingCategories.map((cat) => (
+            <WrapItem key={`pit-${cat}`}>
               <Tag size="sm" colorScheme="blue" variant="subtle">
                 {cat}
               </Tag>

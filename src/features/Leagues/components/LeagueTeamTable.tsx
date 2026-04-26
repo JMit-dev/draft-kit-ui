@@ -101,9 +101,16 @@ function parsePrice(value: string): number {
 function calculateCurrentBudgetFromRows(
   startingBudget: number,
   rows: TeamTableRow[],
+  takenPlayers: TakenPlayer[],
 ): number {
-  const spent = rows.reduce((sum, row) => sum + parsePrice(row.price), 0);
-  return Math.max(0, startingBudget - spent);
+  const rowSlots = new Set(rows.map((r) => r.rowId));
+  const rowSpend = rows.reduce((sum, row) => sum + parsePrice(row.price), 0);
+  // Also deduct spending from taken players whose slot has no corresponding row
+  // (e.g. 'DRAFT' sentinel entries from live auction picks)
+  const extraSpend = takenPlayers
+    .filter(([, , slot]) => !rowSlots.has(slot))
+    .reduce((sum, [, , , price]) => sum + price, 0);
+  return Math.max(0, startingBudget - rowSpend - extraSpend);
 }
 
 export default function LeagueTeamTable({
@@ -173,7 +180,11 @@ export default function LeagueTeamTable({
   }, [players]);
 
   const rows = localRows;
-  const currentBudget = calculateCurrentBudgetFromRows(startingBudget, rows);
+  const currentBudget = calculateCurrentBudgetFromRows(
+    startingBudget,
+    rows,
+    takenPlayers,
+  );
 
   // All player IDs already taken anywhere in the league
   const leagueTakenPlayerIds = useMemo(

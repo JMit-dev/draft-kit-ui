@@ -118,7 +118,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
     const handledSlots = new Set<string>();
 
     currentTakenPlayers.forEach((takenPlayer) => {
-      const [playerId, takenPlayerTeamId, positionSlot] = takenPlayer;
+      const [, takenPlayerTeamId, positionSlot] = takenPlayer;
       if (takenPlayerTeamId !== teamId) {
         updatedTakenPlayers.push(takenPlayer);
         return;

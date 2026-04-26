@@ -9,7 +9,13 @@ vi.mock('@chakra-ui/react', async () => {
 });
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { ChakraProvider } from '@chakra-ui/react';
 import DraftBoard from './DraftBoard';
 import type {
@@ -210,6 +216,43 @@ describe('DraftBoard', () => {
     expect(undoButton.disabled).toBe(false);
     fireEvent.click(undoButton);
     expect(onUndo).toHaveBeenCalledOnce();
+  });
+
+  it('renders a pre-existing draft pick row with correct pick number, teams, player, and salary', async () => {
+    const existingPicks: DraftPick[] = [
+      [1, 'team-1', 'team-2', 'player-adley', 30],
+    ];
+    await renderDraftBoard({ draftPicks: existingPicks });
+
+    // Scope assertions to table rows to avoid collisions with dropdown <option> elements
+    const rows = screen.getAllByRole('row');
+    // rows[0] = header, rows[1] = pick row, rows[2] = input row
+    const pickRow = rows[1];
+    expect(within(pickRow).getByText('1')).toBeTruthy();
+    expect(within(pickRow).getByText('Alpha')).toBeTruthy();
+    expect(within(pickRow).getByText('A. Rutschman')).toBeTruthy();
+    expect(within(pickRow).getByText('Beta')).toBeTruthy();
+    expect(within(pickRow).getByText('$30')).toBeTruthy();
+  });
+
+  it('renders all pre-existing pick rows when multiple picks are stored', async () => {
+    const existingPicks: DraftPick[] = [
+      [1, 'team-1', 'team-2', 'player-adley', 30],
+      [2, 'team-2', 'team-1', 'player-freddie', 45],
+    ];
+    await renderDraftBoard({ draftPicks: existingPicks });
+
+    const rows = screen.getAllByRole('row');
+    // rows[0] = header, rows[1] = first pick, rows[2] = second pick, rows[3] = input row
+    const firstPickRow = rows[1];
+    expect(within(firstPickRow).getByText('1')).toBeTruthy();
+    expect(within(firstPickRow).getByText('A. Rutschman')).toBeTruthy();
+    expect(within(firstPickRow).getByText('$30')).toBeTruthy();
+
+    const secondPickRow = rows[2];
+    expect(within(secondPickRow).getByText('2')).toBeTruthy();
+    expect(within(secondPickRow).getByText('F. Freeman')).toBeTruthy();
+    expect(within(secondPickRow).getByText('$45')).toBeTruthy();
   });
 
   it('clears all input fields after a valid pick is entered', async () => {
