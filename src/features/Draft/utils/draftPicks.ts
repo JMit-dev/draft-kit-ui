@@ -7,9 +7,7 @@ import type {
 export function deriveDraftPicksFromTakenPlayers(
   takenPlayers: TakenPlayer[],
 ): DraftPick[] {
-  const draftEntries = takenPlayers.filter(([, , slot]) => slot === 'DRAFT');
-
-  return draftEntries.map(([playerId, winningTeamId, , salary], index) => {
+  return takenPlayers.map(([playerId, winningTeamId, , salary], index) => {
     const pickNumber = index + 1;
     const nominatingTeamId = winningTeamId;
     return [pickNumber, nominatingTeamId, winningTeamId, playerId, salary];

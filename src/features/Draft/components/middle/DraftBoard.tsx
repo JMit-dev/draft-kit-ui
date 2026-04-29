@@ -20,17 +20,21 @@ import {
 import type {
   DraftPick,
   LeagueTeam,
+  RosterSlots,
   TakenPlayer,
 } from '@/features/Leagues/types/leagues.types';
 import { usePlayers } from '@/shared/hooks/usePlayers';
 import { formatPlayerDisplay } from '@/shared/utils/format';
 import PlayerSearchInput from '@/shared/components/ui/PlayerSearchInput';
+import { autoAssignSlot } from '../../utils/autoAssign';
 
 type DraftBoardProps = {
   teams?: LeagueTeam[];
   takenPlayers?: TakenPlayer[];
   draftPicks?: DraftPick[];
   startingBudget?: number;
+  rosterSlots?: RosterSlots;
+  minorLeagueSlots?: number;
   onPickEntered?: (pick: DraftPick, takenEntry: TakenPlayer) => void;
   onUndo?: () => void;
 };
@@ -48,6 +52,8 @@ export default function DraftBoard({
   takenPlayers = [],
   draftPicks = [],
   startingBudget = 0,
+  rosterSlots,
+  minorLeagueSlots = 0,
   onPickEntered,
   onUndo,
 }: DraftBoardProps) {
@@ -121,10 +127,35 @@ export default function DraftBoard({
       playerId,
       salaryNum,
     ];
+    const draftedPlayer = players.find((p) => p._id === playerId);
+    const slot =
+      draftedPlayer && rosterSlots
+        ? autoAssignSlot(
+            draftedPlayer,
+            winningTeamId,
+            takenPlayers,
+            rosterSlots,
+            minorLeagueSlots,
+          )
+        : 'UNSLOTTED';
+
+    if (slot === 'UNSLOTTED') {
+      toast({
+        title: 'Invalid pick.',
+        description:
+          'No eligible roster slot available for this player on the winning team.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+      return;
+    }
+
     const newTakenEntry: TakenPlayer = [
       playerId,
       winningTeamId,
-      'DRAFT',
+      slot,
       salaryNum,
     ];
 

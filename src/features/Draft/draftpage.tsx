@@ -33,21 +33,13 @@ export default function DraftPage() {
 
     const [, , winningTeamId, playerId] = picks[picks.length - 1];
 
-    let removed = false;
-    const newTakenPlayers = (selectedLeague.taken_players ?? []).filter(
-      ([pid, tid, slot]) => {
-        if (
-          !removed &&
-          pid === playerId &&
-          tid === winningTeamId &&
-          slot === 'DRAFT'
-        ) {
-          removed = true;
-          return false;
-        }
-        return true;
-      },
+    const allTaken = selectedLeague.taken_players ?? [];
+    const lastMatchIndex = allTaken.reduce(
+      (found, [pid, tid], i) =>
+        pid === playerId && tid === winningTeamId ? i : found,
+      -1,
     );
+    const newTakenPlayers = allTaken.filter((_, i) => i !== lastMatchIndex);
     const newDraftPicks = picks.slice(0, -1);
 
     setSelectedLeague({
@@ -130,6 +122,8 @@ export default function DraftPage() {
           takenPlayers={selectedLeague?.taken_players ?? []}
           draftPicks={selectedLeague?.draft_picks ?? []}
           startingBudget={selectedLeague?.totalBudget ?? 0}
+          rosterSlots={selectedLeague?.rosterSlots}
+          minorLeagueSlots={selectedLeague?.minorLeagueSlotsPerTeam ?? 0}
           onPickEntered={handlePickEntered}
           onUndo={handleUndo}
         />
