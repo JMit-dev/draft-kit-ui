@@ -70,6 +70,35 @@ export default function DraftPage() {
     });
   }
 
+  function handleSaveRosters(updatedTakenPlayers: TakenPlayer[]) {
+    if (!selectedLeague) return;
+
+    const newDraftPicks = deriveDraftPicksFromTakenPlayers(updatedTakenPlayers);
+
+    setSelectedLeague({
+      ...selectedLeague,
+      taken_players: updatedTakenPlayers,
+      draft_picks: newDraftPicks,
+    });
+
+    void upsertLeagueMutation.mutateAsync({
+      input: {
+        name: selectedLeague.name,
+        teams: selectedLeague.teams?.length ?? 0,
+        draftType: selectedLeague.draftType as 'auction',
+        rosterSlots: selectedLeague.rosterSlots,
+        totalBudget: selectedLeague.totalBudget ?? 0,
+        battingCategories: selectedLeague.battingCategories,
+        pitchingCategories: selectedLeague.pitchingCategories,
+        minorLeagueSlotsPerTeam: selectedLeague.minorLeagueSlotsPerTeam,
+        takenPlayers: updatedTakenPlayers,
+        draftPicks: newDraftPicks,
+        teamsData: selectedLeague.teams,
+      },
+      existingLeague: selectedLeague,
+    });
+  }
+
   function handlePickEntered(_pick: DraftPick, takenEntry: TakenPlayer) {
     if (!selectedLeague) return;
 
@@ -133,7 +162,11 @@ export default function DraftPage() {
         />
       </Box>
       <Box flex={1} minW={0} overflow="hidden">
-        <DraftRightPanel league={selectedLeague} />
+        <DraftRightPanel
+          league={selectedLeague}
+          onSaveRosters={handleSaveRosters}
+          isSavingRosters={upsertLeagueMutation.isPending}
+        />
       </Box>
     </Flex>
   );

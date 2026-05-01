@@ -41,6 +41,11 @@ type LeagueTeamTableProps = {
       price: number;
     }>;
   }) => void;
+  onDirtyChange?: (teamId: string, isDirty: boolean) => void;
+  onRowsChange?: (
+    teamId: string,
+    rows: Array<{ rowId: string; playerId: string; price: number }>,
+  ) => void;
   isSaving?: boolean;
   readOnly?: boolean;
   draftMode?: boolean;
@@ -123,12 +128,14 @@ export default function LeagueTeamTable({
   startingBudget,
   minorLeagueSlots = 0,
   onSaveChanges,
+  onDirtyChange,
+  onRowsChange,
   isSaving = false,
   readOnly = false,
   draftMode = false,
 }: LeagueTeamTableProps) {
   const toast = useToast();
-  const [, teamName] = team;
+  const [teamId, teamName] = team;
   const propRows = useMemo(
     () => buildTeamRows(rosterSlots, takenPlayers, minorLeagueSlots),
     [rosterSlots, takenPlayers, minorLeagueSlots],
@@ -225,6 +232,21 @@ export default function LeagueTeamTable({
         row.price !== propRows[index]?.price ||
         row.playerId !== propRows[index]?.playerId,
     );
+
+  useEffect(() => {
+    onDirtyChange?.(teamId, isDirty);
+  }, [teamId, isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    onRowsChange?.(
+      teamId,
+      localRows.map((row) => ({
+        rowId: row.rowId,
+        playerId: row.playerId,
+        price: parsePrice(row.price),
+      })),
+    );
+  }, [teamId, localRows, onRowsChange]);
 
   function handleLocalPriceChange(rowIndex: number, value: string) {
     if (value !== '' && !/^\d+$/.test(value)) return;
