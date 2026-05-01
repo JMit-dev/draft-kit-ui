@@ -11,7 +11,7 @@ import { useUpsertLeague } from '@/features/Leagues/hooks/useUpsertLeague';
 import DraftLeftPanel from './components/left/DraftLeftPanel';
 import DraftMiddlePanel from './components/middle/DraftMiddlePanel';
 import DraftRightPanel from './components/right/DraftRightPanel';
-import { ensureLeagueHasDraftPicks } from './utils/draftPicks';
+import { deriveDraftPicksFromTakenPlayers } from './utils/draftPicks';
 
 export default function DraftPage() {
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
@@ -23,24 +23,28 @@ export default function DraftPage() {
       return;
     }
 
-    setSelectedLeague(ensureLeagueHasDraftPicks(league));
+    setSelectedLeague({
+      ...league,
+      draft_picks: deriveDraftPicksFromTakenPlayers(league.taken_players ?? []),
+    });
   }
 
   function handleUndo() {
     if (!selectedLeague) return;
-    const picks = selectedLeague.draft_picks ?? [];
+    const picks = deriveDraftPicksFromTakenPlayers(
+      selectedLeague.taken_players ?? [],
+    );
     if (picks.length === 0) return;
 
-    const [, , winningTeamId, playerId] = picks[picks.length - 1];
+    const [lastPickNumber] = picks[picks.length - 1];
 
     const allTaken = selectedLeague.taken_players ?? [];
-    const lastMatchIndex = allTaken.reduce(
-      (found, [pid, tid], i) =>
-        pid === playerId && tid === winningTeamId ? i : found,
-      -1,
-    );
-    const newTakenPlayers = allTaken.filter((_, i) => i !== lastMatchIndex);
-    const newDraftPicks = picks.slice(0, -1);
+    const newTakenPlayers = allTaken.filter((entry) => {
+      if (entry.length !== 5) return true;
+      const [pickNumber] = entry[4];
+      return pickNumber !== lastPickNumber;
+    });
+    const newDraftPicks = deriveDraftPicksFromTakenPlayers(newTakenPlayers);
 
     setSelectedLeague({
       ...selectedLeague,
@@ -66,14 +70,14 @@ export default function DraftPage() {
     });
   }
 
-  function handlePickEntered(pick: DraftPick, takenEntry: TakenPlayer) {
+  function handlePickEntered(_pick: DraftPick, takenEntry: TakenPlayer) {
     if (!selectedLeague) return;
 
     const newTakenPlayers = [
       ...(selectedLeague.taken_players ?? []),
       takenEntry,
     ];
-    const newDraftPicks = [...(selectedLeague.draft_picks ?? []), pick];
+    const newDraftPicks = deriveDraftPicksFromTakenPlayers(newTakenPlayers);
 
     setSelectedLeague({
       ...selectedLeague,

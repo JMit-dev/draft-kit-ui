@@ -105,6 +105,13 @@ describe('DraftBoard', () => {
             positions: ['1B'],
             playerType: 'hitter',
           },
+          {
+            _id: 'player-trout',
+            name: 'Mike Trout',
+            team: 'LAA',
+            positions: ['OF'],
+            playerType: 'hitter',
+          },
         ],
         pagination: { totalPages: 1 },
       }),
@@ -180,16 +187,16 @@ describe('DraftBoard', () => {
 
     expect(onPickEntered).toHaveBeenCalledWith(
       [1, 'team-1', 'team-2', 'player-adley', 30],
-      ['player-adley', 'team-2', 'C-0', 30],
+      ['player-adley', 'team-2', 'C-0', 30, [1, 'team-1', 'team-2']],
     );
   });
 
   it('uses existing draft picks length to determine the next pick number', async () => {
     const onPickEntered = vi.fn();
-    const existingPicks: DraftPick[] = [
-      [1, 'team-1', 'team-2', 'player-freddie', 40],
+    const takenPlayers: TakenPlayer[] = [
+      ['player-freddie', 'team-2', '1B-0', 40, [1, 'team-1', 'team-2']],
     ];
-    await renderDraftBoard({ onPickEntered, draftPicks: existingPicks });
+    await renderDraftBoard({ onPickEntered, takenPlayers });
 
     const [nominatingSelect, winningSelect] = screen
       .getAllByRole('combobox')
@@ -221,10 +228,10 @@ describe('DraftBoard', () => {
 
   it('Undo button is enabled and calls onUndo when picks exist', async () => {
     const onUndo = vi.fn();
-    const existingPicks: DraftPick[] = [
-      [1, 'team-1', 'team-2', 'player-adley', 30],
+    const takenPlayers: TakenPlayer[] = [
+      ['player-adley', 'team-2', 'C-0', 30, [1, 'team-1', 'team-2']],
     ];
-    await renderDraftBoard({ draftPicks: existingPicks, onUndo });
+    await renderDraftBoard({ takenPlayers, onUndo });
 
     const undoButton = screen.getByRole('button', {
       name: /undo/i,
@@ -235,10 +242,10 @@ describe('DraftBoard', () => {
   });
 
   it('renders a pre-existing draft pick row with correct pick number, teams, player, and salary', async () => {
-    const existingPicks: DraftPick[] = [
-      [1, 'team-1', 'team-2', 'player-adley', 30],
+    const takenPlayers: TakenPlayer[] = [
+      ['player-adley', 'team-2', 'C-0', 30, [1, 'team-1', 'team-2']],
     ];
-    await renderDraftBoard({ draftPicks: existingPicks });
+    await renderDraftBoard({ takenPlayers });
 
     // Scope assertions to table rows to avoid collisions with dropdown <option> elements
     const rows = screen.getAllByRole('row');
@@ -252,11 +259,11 @@ describe('DraftBoard', () => {
   });
 
   it('renders all pre-existing pick rows when multiple picks are stored', async () => {
-    const existingPicks: DraftPick[] = [
-      [1, 'team-1', 'team-2', 'player-adley', 30],
-      [2, 'team-2', 'team-1', 'player-freddie', 45],
+    const takenPlayers: TakenPlayer[] = [
+      ['player-adley', 'team-2', 'C-0', 30, [1, 'team-1', 'team-2']],
+      ['player-freddie', 'team-1', '1B-0', 45, [2, 'team-2', 'team-1']],
     ];
-    await renderDraftBoard({ draftPicks: existingPicks });
+    await renderDraftBoard({ takenPlayers });
 
     const rows = screen.getAllByRole('row');
     // rows[0] = header, rows[1] = first pick, rows[2] = second pick, rows[3] = input row

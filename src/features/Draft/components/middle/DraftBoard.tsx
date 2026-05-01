@@ -27,6 +27,7 @@ import { usePlayers } from '@/shared/hooks/usePlayers';
 import { formatPlayerDisplay } from '@/shared/utils/format';
 import PlayerSearchInput from '@/shared/components/ui/PlayerSearchInput';
 import { autoAssignSlot } from '../../utils/autoAssign';
+import { deriveDraftPicksFromTakenPlayers } from '../../utils/draftPicks';
 
 type DraftBoardProps = {
   teams?: LeagueTeam[];
@@ -50,7 +51,6 @@ const COLUMNS = [
 export default function DraftBoard({
   teams = [],
   takenPlayers = [],
-  draftPicks = [],
   startingBudget = 0,
   rosterSlots,
   minorLeagueSlots = 0,
@@ -59,6 +59,11 @@ export default function DraftBoard({
 }: DraftBoardProps) {
   const { players, isLoading } = usePlayers();
   const toast = useToast();
+
+  const displayedDraftPicks = useMemo(
+    () => deriveDraftPicksFromTakenPlayers(takenPlayers),
+    [takenPlayers],
+  );
 
   const [nominatingTeamId, setNominatingTeamId] = useState('');
   const [playerSearch, setPlayerSearch] = useState('');
@@ -119,7 +124,7 @@ export default function DraftBoard({
       return;
     }
 
-    const pickNumber = draftPicks.length + 1;
+    const pickNumber = displayedDraftPicks.length + 1;
     const newPick: DraftPick = [
       pickNumber,
       nominatingTeamId,
@@ -157,6 +162,7 @@ export default function DraftBoard({
       winningTeamId,
       slot,
       salaryNum,
+      [pickNumber, nominatingTeamId, winningTeamId],
     ];
 
     onPickEntered?.(newPick, newTakenEntry);
@@ -189,29 +195,31 @@ export default function DraftBoard({
           </Tr>
         </Thead>
         <Tbody>
-          {draftPicks.map(([pickNum, nominatingId, winningId, pid, sal]) => {
-            const player = players.find((p) => p._id === pid);
-            return (
-              <Tr key={pickNum}>
-                <Td>{pickNum}</Td>
-                <Td>{getTeamName(nominatingId)}</Td>
-                <Td>
-                  {player ? (
-                    <Box>
-                      <Text fontSize="sm">{formatPlayerDisplay(player)}</Text>
-                      <Text fontSize="xs" color="gray.500">
-                        {player.positions.join('/')} &middot; {player.team}
-                      </Text>
-                    </Box>
-                  ) : (
-                    pid
-                  )}
-                </Td>
-                <Td>{getTeamName(winningId)}</Td>
-                <Td isNumeric>${sal}</Td>
-              </Tr>
-            );
-          })}
+          {displayedDraftPicks.map(
+            ([pickNum, nominatingId, winningId, pid, sal]) => {
+              const player = players.find((p) => p._id === pid);
+              return (
+                <Tr key={pickNum}>
+                  <Td>{pickNum}</Td>
+                  <Td>{getTeamName(nominatingId)}</Td>
+                  <Td>
+                    {player ? (
+                      <Box>
+                        <Text fontSize="sm">{formatPlayerDisplay(player)}</Text>
+                        <Text fontSize="xs" color="gray.500">
+                          {player.positions.join('/')} &middot; {player.team}
+                        </Text>
+                      </Box>
+                    ) : (
+                      pid
+                    )}
+                  </Td>
+                  <Td>{getTeamName(winningId)}</Td>
+                  <Td isNumeric>${sal}</Td>
+                </Tr>
+              );
+            },
+          )}
           <Tr>
             <Td />
             <Td>
@@ -281,7 +289,7 @@ export default function DraftBoard({
                 <Button
                   size="sm"
                   variant="outline"
-                  isDisabled={draftPicks.length === 0}
+                  isDisabled={displayedDraftPicks.length === 0}
                   onClick={onUndo}
                 >
                   Undo
