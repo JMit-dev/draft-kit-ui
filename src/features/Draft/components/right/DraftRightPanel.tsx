@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Button, Flex, Stack, Text } from '@chakra-ui/react';
 import type {
   League,
@@ -25,6 +25,21 @@ export default function DraftRightPanel({
   const [currentRowsByTeam, setCurrentRowsByTeam] = useState<
     Record<string, TeamRow[]>
   >({});
+  const [forcedEmptyPlayersByTeam, setForcedEmptyPlayersByTeam] = useState<
+    Record<string, Set<string>>
+  >({});
+
+  // Stable ref so handleCrossTeamTransfer can read latest rows without being
+  // in its dependency array (avoids recreating on every row change)
+  const currentRowsByTeamRef = useRef(currentRowsByTeam);
+  useEffect(() => {
+    currentRowsByTeamRef.current = currentRowsByTeam;
+  });
+
+  // Reset transfer state whenever the persisted league data changes
+  useEffect(() => {
+    setForcedEmptyPlayersByTeam({});
+  }, [league]);
 
   const handleDirtyChange = useCallback((teamId: string, isDirty: boolean) => {
     setDirtyTeamIds((prev) => {
@@ -53,6 +68,35 @@ export default function DraftRightPanel({
       return { ...prev, [teamId]: rows };
     });
   }, []);
+
+  const handleCrossTeamTransfer = useCallback(
+    (playerId: string, destTeamId: string) => {
+      let sourceTeamId: string | null = null;
+      for (const [tid, rows] of Object.entries(currentRowsByTeamRef.current)) {
+        if (rows.some((r) => r.playerId === playerId)) {
+          sourceTeamId = tid;
+          break;
+        }
+      }
+
+      if (!sourceTeamId || sourceTeamId === destTeamId) return;
+
+      setForcedEmptyPlayersByTeam((prev) => {
+        const sourceSet = new Set(prev[sourceTeamId!] ?? []);
+        sourceSet.add(playerId);
+        const destSet = new Set(prev[destTeamId] ?? []);
+        destSet.delete(playerId);
+        return { ...prev, [sourceTeamId!]: sourceSet, [destTeamId]: destSet };
+      });
+
+      setDirtyTeamIds((prev) => {
+        const next = new Set(prev);
+        next.add(sourceTeamId!);
+        return next;
+      });
+    },
+    [],
+  );
 
   const teams = league?.teams ?? [];
   const takenPlayers = league?.taken_players ?? [];
@@ -85,8 +129,9 @@ export default function DraftRightPanel({
       for (const row of rows) {
         if (!row.playerId) continue;
 
+        // Search by playerId alone so cross-team transfers still inherit pick data
         const existing = existingTakenPlayers.find(
-          ([pid, tid]) => pid === row.playerId && tid === teamId,
+          ([pid]) => pid === row.playerId,
         );
 
         if (existing && existing.length === 5) {
@@ -103,14 +148,11 @@ export default function DraftRightPanel({
       }
     }
 
-    // Preserve any entries whose player wasn't captured in the table rows
-    // (e.g. UNSLOTTED entries with a position slot not matching any row ID)
-    const processedPairs = new Set(
-      newTakenPlayers.map(([pid, tid]) => `${pid}|${tid}`),
-    );
+    // Preserve unslotted entries (e.g. positionSlot='DRAFT') not captured in any table row.
+    // Deduplicate by playerId so cross-team transfers don't re-add the old entry.
+    const processedPlayerIds = new Set(newTakenPlayers.map(([pid]) => pid));
     for (const entry of existingTakenPlayers) {
-      const [pid, tid] = entry;
-      if (!processedPairs.has(`${pid}|${tid}`)) {
+      if (!processedPlayerIds.has(entry[0])) {
         newTakenPlayers.push(entry);
       }
     }
@@ -145,6 +187,8 @@ export default function DraftRightPanel({
                 minorLeagueSlots={league.minorLeagueSlotsPerTeam ?? 0}
                 onDirtyChange={handleDirtyChange}
                 onRowsChange={handleRowsChange}
+                onCrossTeamTransfer={handleCrossTeamTransfer}
+                forcedEmptyPlayerIds={forcedEmptyPlayersByTeam[teamId]}
                 isSaving={isSavingRosters}
                 draftMode
               />

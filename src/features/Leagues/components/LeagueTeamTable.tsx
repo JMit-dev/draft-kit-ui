@@ -46,6 +46,8 @@ type LeagueTeamTableProps = {
     teamId: string,
     rows: Array<{ rowId: string; playerId: string; price: number }>,
   ) => void;
+  onCrossTeamTransfer?: (playerId: string, destTeamId: string) => void;
+  forcedEmptyPlayerIds?: Set<string>;
   isSaving?: boolean;
   readOnly?: boolean;
   draftMode?: boolean;
@@ -130,6 +132,8 @@ export default function LeagueTeamTable({
   onSaveChanges,
   onDirtyChange,
   onRowsChange,
+  onCrossTeamTransfer,
+  forcedEmptyPlayerIds,
   isSaving = false,
   readOnly = false,
   draftMode = false,
@@ -204,13 +208,9 @@ export default function LeagueTeamTable({
     [takenPlayersForAvailability],
   );
 
-  // In draft mode, only show players already on this team
-  const ownTeamPlayerIds = useMemo(
-    () => new Set(takenPlayers.map(([playerId]) => playerId)),
-    [takenPlayers],
-  );
+  // In draft mode, show all drafted players across the league (to support trades)
   const availablePlayers = draftMode
-    ? players.filter((p) => ownTeamPlayerIds.has(p._id))
+    ? players.filter((p) => leagueTakenPlayerIds.has(p._id))
     : players;
 
   // Returns IDs unavailable for a given row: league-wide taken + other slots in this table
@@ -248,6 +248,17 @@ export default function LeagueTeamTable({
     );
   }, [teamId, localRows, onRowsChange]);
 
+  useEffect(() => {
+    if (!forcedEmptyPlayerIds || forcedEmptyPlayerIds.size === 0) return;
+    setLocalRows((prev) =>
+      prev.map((row) =>
+        row.playerId && forcedEmptyPlayerIds.has(row.playerId)
+          ? { ...row, playerId: '', search: '', team: '', price: '0' }
+          : row,
+      ),
+    );
+  }, [forcedEmptyPlayerIds]);
+
   function handleLocalPriceChange(rowIndex: number, value: string) {
     if (value !== '' && !/^\d+$/.test(value)) return;
 
@@ -274,9 +285,25 @@ export default function LeagueTeamTable({
     team: string,
   ) {
     if (draftMode && playerId) {
+      const isCrossTeamTransfer = !localRows.some(
+        (r) => r.playerId === playerId,
+      );
+
+      if (isCrossTeamTransfer) {
+        onCrossTeamTransfer?.(playerId, teamId);
+      }
+
       setLocalRows((prev) => {
         const sourceIndex = prev.findIndex((r) => r.playerId === playerId);
-        const salary = sourceIndex >= 0 ? prev[sourceIndex].price : '0';
+        let salary: string;
+        if (sourceIndex >= 0) {
+          salary = prev[sourceIndex].price;
+        } else {
+          const existingEntry = allTakenPlayers?.find(
+            ([pid]) => pid === playerId,
+          );
+          salary = existingEntry ? String(existingEntry[3]) : '0';
+        }
         return prev.map((row, index) => {
           if (index === rowIndex)
             return {
