@@ -11,7 +11,6 @@ import { useUpsertLeague } from '@/features/Leagues/hooks/useUpsertLeague';
 import DraftLeftPanel from './components/left/DraftLeftPanel';
 import DraftMiddlePanel from './components/middle/DraftMiddlePanel';
 import DraftRightPanel from './components/right/DraftRightPanel';
-import { deriveDraftPicksFromTakenPlayers } from './utils/draftPicks';
 
 export default function DraftPage() {
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
@@ -23,20 +22,14 @@ export default function DraftPage() {
 
   function handleUndo() {
     if (!selectedLeague) return;
-    const picks = deriveDraftPicksFromTakenPlayers(
-      selectedLeague.taken_players ?? [],
-    );
+    const picks = selectedLeague.draft_picks ?? [];
     if (picks.length === 0) return;
 
-    const [lastPickNumber] = picks[picks.length - 1];
-
-    const allTaken = selectedLeague.taken_players ?? [];
-    const newTakenPlayers = allTaken.filter((entry) => {
-      if (entry.length !== 5) return true;
-      const [pickNumber] = entry[4];
-      return pickNumber !== lastPickNumber;
-    });
-    const newDraftPicks = deriveDraftPicksFromTakenPlayers(newTakenPlayers);
+    const lastPickNumber = picks[picks.length - 1][0];
+    const newDraftPicks = picks.filter(([n]) => n !== lastPickNumber);
+    const newTakenPlayers = (selectedLeague.taken_players ?? []).filter(
+      (entry) => !(entry.length === 5 && entry[4][0] === lastPickNumber),
+    );
 
     setSelectedLeague({
       ...selectedLeague,
@@ -65,12 +58,12 @@ export default function DraftPage() {
   function handleSaveRosters(updatedTakenPlayers: TakenPlayer[]) {
     if (!selectedLeague) return;
 
-    const newDraftPicks = deriveDraftPicksFromTakenPlayers(updatedTakenPlayers);
+    const draftPicks = selectedLeague.draft_picks ?? [];
 
     setSelectedLeague({
       ...selectedLeague,
       taken_players: updatedTakenPlayers,
-      draft_picks: newDraftPicks,
+      draft_picks: draftPicks,
     });
 
     void upsertLeagueMutation.mutateAsync({
@@ -84,21 +77,21 @@ export default function DraftPage() {
         pitchingCategories: selectedLeague.pitchingCategories,
         minorLeagueSlotsPerTeam: selectedLeague.minorLeagueSlotsPerTeam,
         takenPlayers: updatedTakenPlayers,
-        draftPicks: newDraftPicks,
+        draftPicks: draftPicks,
         teamsData: selectedLeague.teams,
       },
       existingLeague: selectedLeague,
     });
   }
 
-  function handlePickEntered(_pick: DraftPick, takenEntry: TakenPlayer) {
+  function handlePickEntered(pick: DraftPick, takenEntry: TakenPlayer) {
     if (!selectedLeague) return;
 
     const newTakenPlayers = [
       ...(selectedLeague.taken_players ?? []),
       takenEntry,
     ];
-    const newDraftPicks = deriveDraftPicksFromTakenPlayers(newTakenPlayers);
+    const newDraftPicks = [...(selectedLeague.draft_picks ?? []), pick];
 
     setSelectedLeague({
       ...selectedLeague,
