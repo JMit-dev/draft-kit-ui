@@ -172,6 +172,39 @@ describe('upsertLeague', () => {
     expect(body.draftStateJson.league.name).toBe('Budget League');
   });
 
+  it('can post draft saves through the dedicated draft-save endpoint', async () => {
+    await upsertLeague(
+      {
+        name: 'Budget League',
+        teams: 2,
+        draftType: 'auction',
+        rosterSlots: {
+          C: 1,
+          '1B': 1,
+          '2B': 1,
+          '3B': 1,
+          SS: 1,
+          CI: 0,
+          MI: 0,
+          OF: 3,
+          DH: 0,
+          SP: 5,
+          RP: 2,
+          UTIL: 0,
+          BENCH: 0,
+        },
+        totalBudget: 260,
+        battingCategories: ['R'],
+        pitchingCategories: ['K'],
+      },
+      undefined,
+      { endpoint: '/api/draft-save/leagues' },
+    );
+
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/draft-save/leagues');
+  });
+
   it('builds draftStateJson automatically when a caller does not provide it', async () => {
     const existingLeague: League = {
       _id: 'league-1',
@@ -281,5 +314,73 @@ describe('upsertLeague', () => {
         }),
       ],
     });
+  });
+
+  it('merges the submitted draftStateJson into the response when the backend omits it', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        success: true,
+        data: { _id: 'league-1', name: 'League' },
+      }),
+    });
+
+    const response = await upsertLeague({
+      name: 'Budget League',
+      teams: 2,
+      draftType: 'auction',
+      rosterSlots: {
+        C: 1,
+        '1B': 1,
+        '2B': 1,
+        '3B': 1,
+        SS: 1,
+        CI: 0,
+        MI: 0,
+        OF: 3,
+        DH: 0,
+        SP: 5,
+        RP: 2,
+        UTIL: 0,
+        BENCH: 0,
+      },
+      totalBudget: 260,
+      battingCategories: ['R'],
+      pitchingCategories: ['K'],
+      draftStateJson: {
+        league: {
+          leagueId: 'league-1',
+          externalId: 'custom-league-1',
+          name: 'Budget League',
+          draftType: 'auction',
+          totalBudget: 260,
+          battingCategories: ['R'],
+          pitchingCategories: ['K'],
+          rosterSlots: {
+            C: 1,
+            '1B': 1,
+            '2B': 1,
+            '3B': 1,
+            SS: 1,
+            CI: 0,
+            MI: 0,
+            OF: 3,
+            DH: 0,
+            SP: 5,
+            RP: 2,
+            UTIL: 0,
+            BENCH: 0,
+          },
+          minorLeagueSlotsPerTeam: 0,
+          teamCount: 2,
+        },
+        teams: [],
+        players: [],
+        draftPicks: [],
+      },
+    });
+
+    expect(response.data.draftStateJson).toBeTruthy();
+    expect(response.data.draftStateJson?.league.name).toBe('Budget League');
   });
 });

@@ -53,6 +53,23 @@ describe('api-client', () => {
     });
   });
 
+  it('attaches X-User-Id to draft-save league requests', async () => {
+    localStorage.setItem(STORAGE_KEYS.USER_ID, JSON.stringify('user-654'));
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ success: true, data: [] }),
+    });
+
+    await localApiClient.post('/api/draft-save/leagues', {
+      name: 'League',
+    });
+
+    const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(request.headers).toMatchObject({
+      'X-User-Id': 'user-654',
+    });
+  });
+
   it('attaches X-User-Id to users/me requests', async () => {
     localStorage.setItem(STORAGE_KEYS.USER_ID, JSON.stringify('user-789'));
     fetchMock.mockResolvedValue({

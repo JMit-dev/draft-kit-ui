@@ -2,15 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Code, Flex, Stack, Text } from '@chakra-ui/react';
-import { useSearchParams } from 'next/navigation';
 import type {
   CreateLeagueResponse,
   DraftPick,
   League,
+  LeagueResponse,
   TakenPlayer,
 } from '@/features/Leagues/types/leagues.types';
 import { useUpsertLeague } from '@/features/Leagues/hooks/useUpsertLeague';
 import { usePlayers } from '@/shared/hooks/usePlayers';
+import { localApiClient } from '@/shared/utils/api-client';
 import DraftLeftPanel from './components/left/DraftLeftPanel';
 import DraftMiddlePanel from './components/middle/DraftMiddlePanel';
 import DraftRightPanel from './components/right/DraftRightPanel';
@@ -23,7 +24,6 @@ import {
 } from './utils/draftState';
 
 export default function DraftPage() {
-  const searchParams = useSearchParams();
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [lastSaveDebug, setLastSaveDebug] = useState<{
     attemptedAt: string;
@@ -33,11 +33,13 @@ export default function DraftPage() {
     responseHasDraftStateJson?: boolean;
     backendReceivedHasDraftStateJson?: boolean;
     backendSavedHasDraftStateJson?: boolean;
+    persistedHasDraftStateJson?: boolean;
+    persistedCheckStatus?: 'pending' | 'success' | 'error';
+    persistedCheckMessage?: string;
   } | null>(null);
   const upsertLeagueMutation = useUpsertLeague();
   const { players } = usePlayers();
   const lastSavedSignature = useRef<string>('');
-  const showDraftDebug = searchParams.get('draftDebug') === '1';
 
   const draftSaveSignature = useMemo(() => {
     if (!selectedLeague) return '';
@@ -85,14 +87,47 @@ export default function DraftPage() {
       payload,
       status: 'pending',
       message: 'Saving draft state to backend...',
+      persistedCheckStatus: 'pending',
+      persistedCheckMessage: 'Waiting to verify persisted draft state...',
     });
 
     void upsertLeagueMutation
       .mutateAsync({
         input: payload,
         existingLeague: selectedLeague,
+        endpoint: '/api/draft-save/leagues',
       })
-      .then((response: CreateLeagueResponse) => {
+      .then(async (response: CreateLeagueResponse) => {
+        let persistedHasDraftStateJson: boolean | undefined;
+        let persistedCheckStatus: 'success' | 'error' = 'success';
+        let persistedCheckMessage =
+          'Verified persisted draft state from backend.';
+
+        try {
+          const persistedResponse = await localApiClient.get<LeagueResponse>(
+            `/api/draft-save/leagues/${response.data._id}`,
+            {
+              params: { _ts: Date.now() },
+              cache: 'no-store',
+            },
+          );
+
+          persistedHasDraftStateJson = Boolean(
+            persistedResponse.data.draftStateJson,
+          );
+
+          if (!persistedHasDraftStateJson) {
+            persistedCheckMessage =
+              'Backend save succeeded, but post-save refetch does not contain draftStateJson.';
+          }
+        } catch (error) {
+          persistedCheckStatus = 'error';
+          persistedCheckMessage =
+            error instanceof Error
+              ? `Unable to verify persisted draft state: ${error.message}`
+              : 'Unable to verify persisted draft state.';
+        }
+
         setLastSaveDebug({
           attemptedAt: new Date().toISOString(),
           payload,
@@ -102,7 +137,13 @@ export default function DraftPage() {
           backendReceivedHasDraftStateJson:
             response.debug?.receivedHasDraftStateJson,
           backendSavedHasDraftStateJson: response.debug?.savedHasDraftStateJson,
+          persistedHasDraftStateJson,
+          persistedCheckStatus,
+          persistedCheckMessage,
         });
+        setSelectedLeague((current) =>
+          current ? initializeDraftState(response.data) : current,
+        );
       })
       .catch((error: unknown) => {
         setLastSaveDebug({
@@ -181,77 +222,93 @@ export default function DraftPage() {
       </Box>
       <Box flex={1} minH={0} overflowY="auto">
         <Stack spacing={4} p={4}>
-          {showDraftDebug ? (
-            <Box borderWidth="1px" borderRadius="md" p={4} bg="gray.50">
-              <Text fontWeight="semibold">Draft Save Debug</Text>
-              {!lastSaveDebug ? (
-                <Text mt={2} color="gray.500" fontSize="sm">
-                  No draft save has been attempted yet.
+          <Box borderWidth="1px" borderRadius="md" p={4} bg="gray.50">
+            <Text fontWeight="semibold">Draft Save Debug</Text>
+            {!lastSaveDebug ? (
+              <Text mt={2} color="gray.500" fontSize="sm">
+                No draft save has been attempted yet.
+              </Text>
+            ) : (
+              <Stack spacing={2} mt={3}>
+                <Text fontSize="sm">Status: {lastSaveDebug.status}</Text>
+                <Text fontSize="sm">
+                  League read backend URL:{' '}
+                  {process.env.NEXT_PUBLIC_BACKEND_URL || '(empty)'}
                 </Text>
-              ) : (
-                <Stack spacing={2} mt={3}>
-                  <Text fontSize="sm">Status: {lastSaveDebug.status}</Text>
+                <Text fontSize="sm">
+                  Draft save backend URL:{' '}
+                  {process.env.NEXT_PUBLIC_DRAFT_SAVE_BACKEND_URL ||
+                    process.env.NEXT_PUBLIC_BACKEND_URL ||
+                    '(empty)'}
+                </Text>
+                <Text fontSize="sm">Time: {lastSaveDebug.attemptedAt}</Text>
+                <Text
+                  fontSize="sm"
+                  color={
+                    lastSaveDebug.status === 'error'
+                      ? 'red.500'
+                      : lastSaveDebug.status === 'success'
+                        ? 'green.600'
+                        : 'blue.600'
+                  }
+                >
+                  {lastSaveDebug.message}
+                </Text>
+                <Text fontSize="sm">
+                  Has `draftStateJson`:{' '}
+                  {lastSaveDebug.payload &&
+                  typeof lastSaveDebug.payload === 'object' &&
+                  'draftStateJson' in lastSaveDebug.payload
+                    ? 'yes'
+                    : 'no'}
+                </Text>
+                {lastSaveDebug.responseHasDraftStateJson !== undefined ? (
                   <Text fontSize="sm">
-                    League read backend URL:{' '}
-                    {process.env.NEXT_PUBLIC_BACKEND_URL || '(empty)'}
+                    Backend response has `draftStateJson`:{' '}
+                    {lastSaveDebug.responseHasDraftStateJson ? 'yes' : 'no'}
                   </Text>
+                ) : null}
+                {lastSaveDebug.persistedHasDraftStateJson !== undefined ? (
                   <Text fontSize="sm">
-                    Draft save backend URL:{' '}
-                    {process.env.NEXT_PUBLIC_DRAFT_SAVE_BACKEND_URL ||
-                      process.env.NEXT_PUBLIC_BACKEND_URL ||
-                      '(empty)'}
+                    Post-save refetch has `draftStateJson`:{' '}
+                    {lastSaveDebug.persistedHasDraftStateJson ? 'yes' : 'no'}
                   </Text>
-                  <Text fontSize="sm">Time: {lastSaveDebug.attemptedAt}</Text>
-                  <Text
-                    fontSize="sm"
-                    color={
-                      lastSaveDebug.status === 'error'
-                        ? 'red.500'
-                        : lastSaveDebug.status === 'success'
-                          ? 'green.600'
-                          : 'blue.600'
-                    }
-                  >
-                    {lastSaveDebug.message}
-                  </Text>
+                ) : null}
+                {lastSaveDebug.backendReceivedHasDraftStateJson !==
+                undefined ? (
                   <Text fontSize="sm">
-                    Has `draftStateJson`:{' '}
-                    {lastSaveDebug.payload &&
-                    typeof lastSaveDebug.payload === 'object' &&
-                    'draftStateJson' in lastSaveDebug.payload
+                    Backend received `draftStateJson`:{' '}
+                    {lastSaveDebug.backendReceivedHasDraftStateJson
                       ? 'yes'
                       : 'no'}
                   </Text>
-                  {lastSaveDebug.responseHasDraftStateJson !== undefined ? (
-                    <Text fontSize="sm">
-                      Backend response has `draftStateJson`:{' '}
-                      {lastSaveDebug.responseHasDraftStateJson ? 'yes' : 'no'}
-                    </Text>
-                  ) : null}
-                  {lastSaveDebug.backendReceivedHasDraftStateJson !==
-                  undefined ? (
-                    <Text fontSize="sm">
-                      Backend received `draftStateJson`:{' '}
-                      {lastSaveDebug.backendReceivedHasDraftStateJson
-                        ? 'yes'
-                        : 'no'}
-                    </Text>
-                  ) : null}
-                  {lastSaveDebug.backendSavedHasDraftStateJson !== undefined ? (
-                    <Text fontSize="sm">
-                      Backend saved `draftStateJson`:{' '}
-                      {lastSaveDebug.backendSavedHasDraftStateJson
-                        ? 'yes'
-                        : 'no'}
-                    </Text>
-                  ) : null}
-                  <Code whiteSpace="pre" display="block" p={3}>
-                    {JSON.stringify(lastSaveDebug.payload, null, 2)}
-                  </Code>
-                </Stack>
-              )}
-            </Box>
-          ) : null}
+                ) : null}
+                {lastSaveDebug.backendSavedHasDraftStateJson !== undefined ? (
+                  <Text fontSize="sm">
+                    Backend saved `draftStateJson`:{' '}
+                    {lastSaveDebug.backendSavedHasDraftStateJson ? 'yes' : 'no'}
+                  </Text>
+                ) : null}
+                {lastSaveDebug.persistedCheckStatus ? (
+                  <Text
+                    fontSize="sm"
+                    color={
+                      lastSaveDebug.persistedCheckStatus === 'error'
+                        ? 'red.500'
+                        : lastSaveDebug.persistedHasDraftStateJson
+                          ? 'green.600'
+                          : 'orange.500'
+                    }
+                  >
+                    {lastSaveDebug.persistedCheckMessage}
+                  </Text>
+                ) : null}
+                <Code whiteSpace="pre" display="block" p={3}>
+                  {JSON.stringify(lastSaveDebug.payload, null, 2)}
+                </Code>
+              </Stack>
+            )}
+          </Box>
           <DraftRightPanel league={selectedLeague} />
         </Stack>
       </Box>

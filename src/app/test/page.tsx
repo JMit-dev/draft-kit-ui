@@ -10,7 +10,7 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
-import { backendClient } from '@/shared/utils/api-client';
+import { localApiClient } from '@/shared/utils/api-client';
 
 const backendExample = `{
   "_id": "<mongo-league-id>",
@@ -32,14 +32,28 @@ type LeagueWithDraftState = {
   draftStateJson?: unknown;
 };
 
+type LeagueDebugRecord = LeagueWithDraftState & {
+  listHasDraftStateJson: boolean;
+  detailHasDraftStateJson: boolean;
+  detailRequestStatus: 'success' | 'error';
+  detailErrorMessage?: string;
+  listPreview: unknown;
+  detailPreview: unknown;
+};
+
 type LeaguesResponse = {
   success: boolean;
   data: LeagueWithDraftState[];
 };
 
+type LeagueResponse = {
+  success: boolean;
+  data: LeagueWithDraftState;
+};
+
 export default function TestPage() {
   const [showBackendLocation, setShowBackendLocation] = useState(false);
-  const [savedJsons, setSavedJsons] = useState<LeagueWithDraftState[]>([]);
+  const [savedJsons, setSavedJsons] = useState<LeagueDebugRecord[]>([]);
   const [isLoadingJsons, setIsLoadingJsons] = useState(false);
   const [jsonError, setJsonError] = useState<string | null>(null);
 
@@ -48,15 +62,52 @@ export default function TestPage() {
       setIsLoadingJsons(true);
       setJsonError(null);
 
-      const response = await backendClient.get<LeaguesResponse>(
-        '/api/leagues',
+      const response = await localApiClient.get<LeaguesResponse>(
+        '/api/draft-save/leagues',
         {
           params: { limit: 100, _ts: Date.now() },
           cache: 'no-store',
         },
       );
 
-      setSavedJsons(response.data ?? []);
+      const leagues = response.data ?? [];
+      const detailedLeagues = await Promise.all(
+        leagues.map(async (league) => {
+          try {
+            const detail = await localApiClient.get<LeagueResponse>(
+              `/api/draft-save/leagues/${league._id}`,
+              {
+                params: { _ts: Date.now() },
+                cache: 'no-store',
+              },
+            );
+
+            const detailLeague = detail.data ?? league;
+
+            return {
+              ...detailLeague,
+              listHasDraftStateJson: Boolean(league.draftStateJson),
+              detailHasDraftStateJson: Boolean(detailLeague.draftStateJson),
+              detailRequestStatus: 'success' as const,
+              listPreview: league,
+              detailPreview: detailLeague,
+            };
+          } catch (error) {
+            return {
+              ...league,
+              listHasDraftStateJson: Boolean(league.draftStateJson),
+              detailHasDraftStateJson: false,
+              detailRequestStatus: 'error' as const,
+              detailErrorMessage:
+                error instanceof Error ? error.message : 'Detail fetch failed.',
+              listPreview: league,
+              detailPreview: null,
+            };
+          }
+        }),
+      );
+
+      setSavedJsons(detailedLeagues);
     } catch (error) {
       setJsonError(
         error instanceof Error
@@ -97,7 +148,11 @@ export default function TestPage() {
           >
             <Text>
               The draft-state JSON is saved to the backend by the Draft Kit UI
-              `POST /api/leagues` request.
+              `POST /api/draft-save/leagues` request.
+            </Text>
+            <Text>
+              Frontend proxy route:{' '}
+              <Code>draft-kit-ui/src/app/api/draft-save/leagues/route.ts</Code>
             </Text>
             <Text>
               Backend route:{' '}
@@ -140,6 +195,24 @@ export default function TestPage() {
                 <Text fontWeight="semibold">
                   {league.name} ({league.externalId})
                 </Text>
+                <Stack spacing={1} mt={3}>
+                  <Text fontSize="sm">
+                    List endpoint has `draftStateJson`:{' '}
+                    {league.listHasDraftStateJson ? 'yes' : 'no'}
+                  </Text>
+                  <Text fontSize="sm">
+                    Detail endpoint has `draftStateJson`:{' '}
+                    {league.detailHasDraftStateJson ? 'yes' : 'no'}
+                  </Text>
+                  <Text fontSize="sm">
+                    Detail request status: {league.detailRequestStatus}
+                  </Text>
+                  {league.detailErrorMessage ? (
+                    <Text fontSize="sm" color="red.500">
+                      Detail error: {league.detailErrorMessage}
+                    </Text>
+                  ) : null}
+                </Stack>
                 {league.draftStateJson ? (
                   <Code whiteSpace="pre" display="block" p={4} mt={3}>
                     {JSON.stringify(league.draftStateJson, null, 2)}
@@ -149,6 +222,18 @@ export default function TestPage() {
                     No saved draftStateJson on this league document.
                   </Text>
                 )}
+                <Text mt={4} fontSize="sm" fontWeight="semibold">
+                  List payload preview
+                </Text>
+                <Code whiteSpace="pre" display="block" p={4} mt={2}>
+                  {JSON.stringify(league.listPreview, null, 2)}
+                </Code>
+                <Text mt={4} fontSize="sm" fontWeight="semibold">
+                  Detail payload preview
+                </Text>
+                <Code whiteSpace="pre" display="block" p={4} mt={2}>
+                  {JSON.stringify(league.detailPreview, null, 2)}
+                </Code>
               </Box>
             ))}
           </Stack>
