@@ -196,7 +196,10 @@ describe('DraftBoard', () => {
     const takenPlayers: TakenPlayer[] = [
       ['player-freddie', 'team-2', '1B-0', 40, [1, 'team-1', 'team-2']],
     ];
-    await renderDraftBoard({ onPickEntered, takenPlayers });
+    const draftPicks: DraftPick[] = [
+      [1, 'team-1', 'team-2', 'player-freddie', 40],
+    ];
+    await renderDraftBoard({ onPickEntered, takenPlayers, draftPicks });
 
     const [nominatingSelect, winningSelect] = screen
       .getAllByRole('combobox')
@@ -231,7 +234,10 @@ describe('DraftBoard', () => {
     const takenPlayers: TakenPlayer[] = [
       ['player-adley', 'team-2', 'C-0', 30, [1, 'team-1', 'team-2']],
     ];
-    await renderDraftBoard({ takenPlayers, onUndo });
+    const draftPicks: DraftPick[] = [
+      [1, 'team-1', 'team-2', 'player-adley', 30],
+    ];
+    await renderDraftBoard({ takenPlayers, draftPicks, onUndo });
 
     const undoButton = screen.getByRole('button', {
       name: /undo/i,
@@ -245,7 +251,10 @@ describe('DraftBoard', () => {
     const takenPlayers: TakenPlayer[] = [
       ['player-adley', 'team-2', 'C-0', 30, [1, 'team-1', 'team-2']],
     ];
-    await renderDraftBoard({ takenPlayers });
+    const draftPicks: DraftPick[] = [
+      [1, 'team-1', 'team-2', 'player-adley', 30],
+    ];
+    await renderDraftBoard({ takenPlayers, draftPicks });
 
     // Scope assertions to table rows to avoid collisions with dropdown <option> elements
     const rows = screen.getAllByRole('row');
@@ -263,7 +272,11 @@ describe('DraftBoard', () => {
       ['player-adley', 'team-2', 'C-0', 30, [1, 'team-1', 'team-2']],
       ['player-freddie', 'team-1', '1B-0', 45, [2, 'team-2', 'team-1']],
     ];
-    await renderDraftBoard({ takenPlayers });
+    const draftPicks: DraftPick[] = [
+      [1, 'team-1', 'team-2', 'player-adley', 30],
+      [2, 'team-2', 'team-1', 'player-freddie', 45],
+    ];
+    await renderDraftBoard({ takenPlayers, draftPicks });
 
     const rows = screen.getAllByRole('row');
     // rows[0] = header, rows[1] = first pick, rows[2] = second pick, rows[3] = input row
@@ -276,6 +289,96 @@ describe('DraftBoard', () => {
     expect(within(secondPickRow).getByText('2')).toBeTruthy();
     expect(within(secondPickRow).getByText('F. Freeman')).toBeTruthy();
     expect(within(secondPickRow).getByText('$45')).toBeTruthy();
+  });
+
+  it('shows draft picks from draftPicks prop even when takenPlayers have no pick metadata', async () => {
+    const takenPlayers: TakenPlayer[] = [
+      ['player-adley', 'team-2', 'C-0', 30], // 4-tuple — no pick metadata
+    ];
+    const draftPicks: DraftPick[] = [
+      [1, 'team-1', 'team-2', 'player-adley', 30],
+    ];
+    await renderDraftBoard({ takenPlayers, draftPicks });
+
+    const rows = screen.getAllByRole('row');
+    // header + 1 pick row + input row + footer row = 4
+    expect(rows.length).toBe(4);
+    const pickRow = rows[1];
+    expect(within(pickRow).getByText('1')).toBeTruthy();
+    expect(within(pickRow).getByText('A. Rutschman')).toBeTruthy();
+    expect(within(pickRow).getByText('$30')).toBeTruthy();
+  });
+
+  it('shows original draft pick data on the board even after the player has been traded to a different team', async () => {
+    // Adley was originally won by team-2 but has since been traded to team-1
+    const takenPlayers: TakenPlayer[] = [
+      ['player-adley', 'team-1', 'C-0', 30, [1, 'team-1', 'team-2']],
+    ];
+    const draftPicks: DraftPick[] = [
+      [1, 'team-1', 'team-2', 'player-adley', 30],
+    ];
+    await renderDraftBoard({ takenPlayers, draftPicks });
+
+    const rows = screen.getAllByRole('row');
+    const pickRow = rows[1];
+    // Board reads from draftPicks — winning team is still Beta (team-2)
+    expect(within(pickRow).getByText('Beta')).toBeTruthy();
+    expect(within(pickRow).getByText('A. Rutschman')).toBeTruthy();
+  });
+
+  it('removes the last pick row when draftPicks prop shrinks after undo', async () => {
+    const takenPlayers: TakenPlayer[] = [
+      ['player-adley', 'team-2', 'C-0', 30, [1, 'team-1', 'team-2']],
+      ['player-freddie', 'team-1', '1B-0', 45, [2, 'team-2', 'team-1']],
+    ];
+    const draftPicks: DraftPick[] = [
+      [1, 'team-1', 'team-2', 'player-adley', 30],
+      [2, 'team-2', 'team-1', 'player-freddie', 45],
+    ];
+
+    const { rerender } = render(
+      <ChakraProvider>
+        <DraftBoard
+          teams={TEAMS}
+          startingBudget={STARTING_BUDGET}
+          takenPlayers={takenPlayers}
+          draftPicks={draftPicks}
+          rosterSlots={ROSTER_SLOTS}
+        />
+      </ChakraProvider>,
+    );
+
+    await screen.findByPlaceholderText('Search player...', undefined, {
+      timeout: 3000,
+    });
+    await waitFor(
+      () => {
+        expect(
+          document.querySelectorAll('datalist option').length,
+        ).toBeGreaterThan(0);
+      },
+      { timeout: 3000 },
+    );
+
+    // header + 2 pick rows + input row + footer row = 5
+    expect(screen.getAllByRole('row').length).toBe(5);
+
+    rerender(
+      <ChakraProvider>
+        <DraftBoard
+          teams={TEAMS}
+          startingBudget={STARTING_BUDGET}
+          takenPlayers={[takenPlayers[0]]}
+          draftPicks={[[1, 'team-1', 'team-2', 'player-adley', 30]]}
+          rosterSlots={ROSTER_SLOTS}
+        />
+      </ChakraProvider>,
+    );
+
+    await waitFor(() => {
+      // header + 1 pick row + input row + footer row = 4
+      expect(screen.getAllByRole('row').length).toBe(4);
+    });
   });
 
   it('clears all input fields after a valid pick is entered', async () => {
