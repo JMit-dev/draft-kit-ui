@@ -8,6 +8,7 @@ import type {
   TakenPlayer,
 } from '@/features/Leagues/types/leagues.types';
 import { useUpsertLeague } from '@/features/Leagues/hooks/useUpsertLeague';
+import { toDraftLeagueInput } from './utils/draftState';
 import DraftLeftPanel from './components/left/DraftLeftPanel';
 import DraftMiddlePanel from './components/middle/DraftMiddlePanel';
 import DraftRightPanel from './components/right/DraftRightPanel';
@@ -18,6 +19,16 @@ export default function DraftPage() {
 
   function handleLeagueChange(league: League | null) {
     setSelectedLeague(league);
+  }
+
+  function saveDraftLeague(league: League) {
+    setSelectedLeague(league);
+
+    void upsertLeagueMutation.mutateAsync({
+      input: toDraftLeagueInput(league),
+      existingLeague: league,
+      endpoint: '/api/draft-save/leagues',
+    });
   }
 
   function handleUndo() {
@@ -31,27 +42,10 @@ export default function DraftPage() {
       ([pid]) => pid !== lastPlayerId,
     );
 
-    setSelectedLeague({
+    saveDraftLeague({
       ...selectedLeague,
       taken_players: newTakenPlayers,
       draft_picks: newDraftPicks,
-    });
-
-    void upsertLeagueMutation.mutateAsync({
-      input: {
-        name: selectedLeague.name,
-        teams: selectedLeague.teams?.length ?? 0,
-        draftType: selectedLeague.draftType as 'auction',
-        rosterSlots: selectedLeague.rosterSlots,
-        totalBudget: selectedLeague.totalBudget ?? 0,
-        battingCategories: selectedLeague.battingCategories,
-        pitchingCategories: selectedLeague.pitchingCategories,
-        minorLeagueSlotsPerTeam: selectedLeague.minorLeagueSlotsPerTeam,
-        takenPlayers: newTakenPlayers,
-        draftPicks: newDraftPicks,
-        teamsData: selectedLeague.teams,
-      },
-      existingLeague: selectedLeague,
     });
   }
 
@@ -60,27 +54,10 @@ export default function DraftPage() {
 
     const draftPicks = selectedLeague.draft_picks ?? [];
 
-    setSelectedLeague({
+    saveDraftLeague({
       ...selectedLeague,
       taken_players: updatedTakenPlayers,
       draft_picks: draftPicks,
-    });
-
-    void upsertLeagueMutation.mutateAsync({
-      input: {
-        name: selectedLeague.name,
-        teams: selectedLeague.teams?.length ?? 0,
-        draftType: selectedLeague.draftType as 'auction',
-        rosterSlots: selectedLeague.rosterSlots,
-        totalBudget: selectedLeague.totalBudget ?? 0,
-        battingCategories: selectedLeague.battingCategories,
-        pitchingCategories: selectedLeague.pitchingCategories,
-        minorLeagueSlotsPerTeam: selectedLeague.minorLeagueSlotsPerTeam,
-        takenPlayers: updatedTakenPlayers,
-        draftPicks: draftPicks,
-        teamsData: selectedLeague.teams,
-      },
-      existingLeague: selectedLeague,
     });
   }
 
@@ -93,27 +70,10 @@ export default function DraftPage() {
     ];
     const newDraftPicks = [...(selectedLeague.draft_picks ?? []), pick];
 
-    setSelectedLeague({
+    saveDraftLeague({
       ...selectedLeague,
       taken_players: newTakenPlayers,
       draft_picks: newDraftPicks,
-    });
-
-    void upsertLeagueMutation.mutateAsync({
-      input: {
-        name: selectedLeague.name,
-        teams: selectedLeague.teams?.length ?? 0,
-        draftType: selectedLeague.draftType as 'auction',
-        rosterSlots: selectedLeague.rosterSlots,
-        totalBudget: selectedLeague.totalBudget ?? 0,
-        battingCategories: selectedLeague.battingCategories,
-        pitchingCategories: selectedLeague.pitchingCategories,
-        minorLeagueSlotsPerTeam: selectedLeague.minorLeagueSlotsPerTeam,
-        takenPlayers: newTakenPlayers,
-        draftPicks: newDraftPicks,
-        teamsData: selectedLeague.teams,
-      },
-      existingLeague: selectedLeague,
     });
   }
 
