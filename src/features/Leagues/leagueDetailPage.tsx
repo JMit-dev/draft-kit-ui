@@ -201,6 +201,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
           },
           totalBudget: currentLeague.totalBudget ?? 0,
           minorLeagueSlotsPerTeam: currentLeague.minorLeagueSlotsPerTeam,
+          taxiSquadPlayersPerTeam: currentLeague.taxiSquadPlayersPerTeam,
           battingCategories: currentLeague.battingCategories,
           pitchingCategories: currentLeague.pitchingCategories,
           takenPlayers: nextTakenPlayers,
@@ -322,6 +323,30 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
                       team={team}
                       mode="minorLeague"
                       slotCount={league.minorLeagueSlotsPerTeam ?? 0}
+                      startingBudget={league.totalBudget ?? 0}
+                      takenPlayers={takenPlayersForTeam}
+                      allTakenPlayers={editedTakenPlayers}
+                      isSaving={upsertLeagueMutation.isPending}
+                      onSaveChanges={({ rows }) => {
+                        const nextTakenPlayers = updateTeamTakenPlayers(
+                          editedTakenPlayers,
+                          teamId,
+                          rows,
+                        );
+                        setEditedTakenPlayers(nextTakenPlayers);
+                        void saveLeagueChanges(editedTeams, nextTakenPlayers);
+                      }}
+                    />
+                  );
+                }
+
+                if (rosterView === 'taxiSquad') {
+                  return (
+                    <SimpleTeamTable
+                      key={teamId}
+                      team={team}
+                      mode="taxiSquad"
+                      slotCount={league.taxiSquadPlayersPerTeam ?? 0}
                       startingBudget={league.totalBudget ?? 0}
                       takenPlayers={takenPlayersForTeam}
                       allTakenPlayers={editedTakenPlayers}
