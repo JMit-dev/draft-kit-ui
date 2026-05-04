@@ -85,18 +85,35 @@ export default function SimpleTeamTable({
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   useEffect(() => {
-    setLocalRows(
-      players.length > 0
-        ? propRows.map((row) => {
-            if (!row.playerId) return row;
-            const match = players.find((p) => p._id === row.playerId);
-            return match
-              ? { ...row, search: formatPlayerDisplay(match), team: match.team }
-              : row;
-          })
-        : propRows,
+    const takenIds = new Set(
+      (allTakenPlayers ?? takenPlayers).map(([id]) => id),
     );
-  }, [propRows, players]);
+    setLocalRows((currentRows) =>
+      propRows.map((propRow, index) => {
+        const localRow = currentRows[index];
+        // Local pick was claimed by another team — clear it
+        if (
+          localRow?.playerId &&
+          localRow.playerId !== propRow.playerId &&
+          takenIds.has(localRow.playerId)
+        ) {
+          return { ...propRow, search: '', team: '' };
+        }
+        // Preserve other unsaved local changes
+        if (localRow?.playerId && localRow.playerId !== propRow.playerId) {
+          return localRow;
+        }
+        // Sync display info for saved data
+        if (!propRow.playerId || players.length === 0) {
+          return { ...propRow, search: '', team: '' };
+        }
+        const match = players.find((p) => p._id === propRow.playerId);
+        return match
+          ? { ...propRow, search: formatPlayerDisplay(match), team: match.team }
+          : { ...propRow, search: '', team: '' };
+      }),
+    );
+  }, [propRows, players, allTakenPlayers, takenPlayers]);
 
   const leagueTakenPlayerIds = useMemo(
     () =>

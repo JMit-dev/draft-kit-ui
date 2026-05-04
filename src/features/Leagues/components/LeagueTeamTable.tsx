@@ -132,25 +132,40 @@ export default function LeagueTeamTable({
 
   useEffect(() => {
     setLocalTeamName(teamName);
-    setLocalRows(
-      players.length > 0
-        ? propRows.map((row) => {
-            if (!row.playerId || row.search) return row;
-
-            const matchingPlayer = players.find(
-              (player) => player._id === row.playerId,
-            );
-            return matchingPlayer
-              ? {
-                  ...row,
-                  search: formatPlayerDisplay(matchingPlayer),
-                  team: matchingPlayer.team,
-                }
-              : row;
-          })
-        : propRows,
+    const takenIds = new Set(
+      (allTakenPlayers ?? takenPlayers).map(([id]) => id),
     );
-  }, [propRows, teamName, players]);
+    setLocalRows((currentRows) =>
+      propRows.map((propRow, index) => {
+        const localRow = currentRows[index];
+        // Local pick was claimed by another team — clear it
+        if (
+          !draftMode &&
+          localRow?.playerId &&
+          localRow.playerId !== propRow.playerId &&
+          takenIds.has(localRow.playerId)
+        ) {
+          return { ...propRow, search: '', team: '', price: '0' };
+        }
+        // Preserve other unsaved local changes
+        if (localRow?.playerId && localRow.playerId !== propRow.playerId) {
+          return localRow;
+        }
+        // Sync display info for saved data
+        if (!propRow.playerId || players.length === 0) {
+          return propRow;
+        }
+        const matchingPlayer = players.find((p) => p._id === propRow.playerId);
+        return matchingPlayer
+          ? {
+              ...propRow,
+              search: formatPlayerDisplay(matchingPlayer),
+              team: matchingPlayer.team,
+            }
+          : propRow;
+      }),
+    );
+  }, [propRows, teamName, players, allTakenPlayers, takenPlayers, draftMode]);
 
   useEffect(() => {
     if (players.length === 0) return;
