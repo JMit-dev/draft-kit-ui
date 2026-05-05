@@ -8,6 +8,7 @@ import type {
   TakenPlayer,
 } from '@/features/Leagues/types/leagues.types';
 import { useUpsertLeague } from '@/features/Leagues/hooks/useUpsertLeague';
+import { apiClient } from '@/shared/utils/api-client';
 import { toDraftLeagueInput } from './utils/draftState';
 import DraftLeftPanel from './components/left/DraftLeftPanel';
 import DraftMiddlePanel from './components/middle/DraftMiddlePanel';
@@ -77,6 +78,19 @@ export default function DraftPage() {
     });
   }
 
+  async function handleFinishDraft(name: string) {
+    if (!selectedLeague) return;
+
+    const response = await apiClient.post(
+      `/api/leagues/${selectedLeague._id}/finish-draft`,
+      { name },
+    );
+
+    if (response?.success && response.data) {
+      setSelectedLeague(response.data);
+    }
+  }
+
   return (
     <Flex h="100vh" overflow="hidden">
       <Box
@@ -104,6 +118,7 @@ export default function DraftPage() {
           minorLeagueSlots={selectedLeague?.minorLeagueSlotsPerTeam ?? 0}
           onPickEntered={handlePickEntered}
           onUndo={handleUndo}
+          onFinishDraft={handleFinishDraft}
         />
       </Box>
       <Box flex={1} minW={0} overflow="hidden">

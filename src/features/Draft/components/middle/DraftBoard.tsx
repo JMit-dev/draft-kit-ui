@@ -1,12 +1,19 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Box,
   Button,
   Flex,
   Input,
   Select,
+  Stack,
   Table,
   Tbody,
   Td,
@@ -15,6 +22,7 @@ import {
   Th,
   Thead,
   Tr,
+  useDisclosure,
   useToast,
 } from '@chakra-ui/react';
 import type {
@@ -37,6 +45,7 @@ type DraftBoardProps = {
   minorLeagueSlots?: number;
   onPickEntered?: (pick: DraftPick, takenEntry: TakenPlayer) => void;
   onUndo?: () => void;
+  onFinishDraft?: (name: string) => void | Promise<void>;
 };
 
 const COLUMNS = [
@@ -56,9 +65,13 @@ export default function DraftBoard({
   minorLeagueSlots = 0,
   onPickEntered,
   onUndo,
+  onFinishDraft,
 }: DraftBoardProps) {
   const { players, isLoading } = usePlayers();
   const toast = useToast();
+  const finishDraftDialog = useDisclosure();
+  const finishDraftCancelRef = useRef<HTMLButtonElement>(null);
+  const [draftName, setDraftName] = useState('');
 
   const displayedDraftPicks = useMemo(
     () => [...draftPicks].sort((a, b) => a[0] - b[0]),
@@ -173,6 +186,25 @@ export default function DraftBoard({
     setSalary('');
   }
 
+  function handleFinishDraftConfirm() {
+    const trimmed = draftName.trim();
+    if (!trimmed) {
+      toast({
+        title: 'Draft name is required.',
+        status: 'error',
+        duration: 2000,
+        isClosable: true,
+        position: 'top',
+      });
+      return;
+    }
+
+    void Promise.resolve(onFinishDraft?.(trimmed)).finally(() => {
+      setDraftName('');
+      finishDraftDialog.onClose();
+    });
+  }
+
   return (
     <Box h="100%" overflowY="auto">
       <Table size="sm">
@@ -281,23 +313,82 @@ export default function DraftBoard({
         <Tfoot>
           <Tr>
             <Td colSpan={COLUMNS.length} borderTopWidth="2px" py={2}>
-              <Flex gap={2}>
-                <Button size="sm" colorScheme="blue" onClick={handleEnterPick}>
-                  Enter Pick
-                </Button>
+              <Flex align="center" justify="space-between" w="100%" gap={2}>
+                <Flex gap={2}>
+                  <Button
+                    size="sm"
+                    colorScheme="blue"
+                    onClick={handleEnterPick}
+                  >
+                    Enter Pick
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    isDisabled={displayedDraftPicks.length === 0}
+                    onClick={onUndo}
+                  >
+                    Undo
+                  </Button>
+                </Flex>
                 <Button
                   size="sm"
                   variant="outline"
+                  onClick={finishDraftDialog.onOpen}
                   isDisabled={displayedDraftPicks.length === 0}
-                  onClick={onUndo}
                 >
-                  Undo
+                  Finish Draft
                 </Button>
               </Flex>
             </Td>
           </Tr>
         </Tfoot>
       </Table>
+
+      <AlertDialog
+        isOpen={finishDraftDialog.isOpen}
+        leastDestructiveRef={finishDraftCancelRef}
+        onClose={finishDraftDialog.onClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Finish Draft
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              <Stack spacing={3}>
+                <Text fontSize="sm">
+                  This will finish the current draft. This action can’t be
+                  undone. To continue drafting later, you’ll need to start a new
+                  draft.
+                </Text>
+                <Input
+                  placeholder="Draft name (e.g. 2026 Season)"
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                />
+              </Stack>
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button
+                ref={finishDraftCancelRef}
+                onClick={finishDraftDialog.onClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                colorScheme="blue"
+                onClick={handleFinishDraftConfirm}
+                ml={3}
+              >
+                Confirm
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 }
