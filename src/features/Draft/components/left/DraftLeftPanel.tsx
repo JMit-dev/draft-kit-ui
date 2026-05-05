@@ -32,22 +32,24 @@ export default function DraftLeftPanel({
     endpointBase: '/api/draft-save/leagues',
     queryKeyPrefix: 'draft-save-league',
   });
-  const lastEmittedLeagueId = useRef<string | null>(null);
+  const lastEmittedLeague = useRef<League | null>(null);
 
   useEffect(() => {
     if (!initialLeagueId) return;
     setSelectedLeagueId(initialLeagueId);
-    lastEmittedLeagueId.current = null;
+    lastEmittedLeague.current = null;
   }, [initialLeagueId]);
 
   useEffect(() => {
     const league = leagueData?.data;
     if (!league) return;
 
-    // Only propagate on initial selection / league switch, not on background refetches.
-    // This prevents refetches from overwriting optimistic draft pick state in DraftPage.
-    if (league._id === lastEmittedLeagueId.current) return;
-    lastEmittedLeagueId.current = league._id;
+    // Block re-emission of the exact same object. React Query's structural sharing
+    // preserves the reference when data hasn't changed, so a refetch returning
+    // identical data won't propagate. A refetch returning updated data (new player,
+    // new pick, etc.) produces a new reference and will propagate normally.
+    if (league === lastEmittedLeague.current) return;
+    lastEmittedLeague.current = league;
     onLeagueChange(league);
   }, [leagueData?.data, onLeagueChange]);
 
@@ -55,7 +57,7 @@ export default function DraftLeftPanel({
     const id = e.target.value;
     setSelectedLeagueId(id);
     setSelectedDraftName('');
-    lastEmittedLeagueId.current = null;
+    lastEmittedLeague.current = null;
     onDraftChange(null);
     if (!id) onLeagueChange(null);
   }
