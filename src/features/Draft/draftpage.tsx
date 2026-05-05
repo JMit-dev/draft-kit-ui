@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Box, Flex } from '@chakra-ui/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import type {
   DraftPick,
@@ -23,6 +24,7 @@ export default function DraftPage() {
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [selectedDraft, setSelectedDraft] = useState<LeagueDraft | null>(null);
   const upsertLeagueMutation = useUpsertLeague();
+  const queryClient = useQueryClient();
 
   function handleLeagueChange(league: League | null) {
     setSelectedLeague(league);
@@ -94,7 +96,15 @@ export default function DraftPage() {
     );
 
     if (response?.success && response.data) {
-      setSelectedLeague(response.data);
+      const updated = response.data;
+      setSelectedLeague(updated);
+      queryClient.setQueryData(['draft-save-league', updated._id], {
+        success: true,
+        data: updated,
+      });
+      void queryClient.invalidateQueries({ queryKey: ['draft-save-leagues'] });
+      void queryClient.invalidateQueries({ queryKey: ['leagues'] });
+      void queryClient.invalidateQueries({ queryKey: ['league'] });
     }
   }
 
