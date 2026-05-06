@@ -36,4 +36,3 @@ yarn-error.log*
 vitest.config.local.mts
 src/test-setup.local.ts
 
-vitest.config.mts
