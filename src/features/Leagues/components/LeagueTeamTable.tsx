@@ -149,6 +149,12 @@ export default function LeagueTeamTable({
         }
         // Preserve other unsaved local changes
         if (localRow?.playerId && localRow.playerId !== propRow.playerId) {
+          // If the player no longer exists anywhere in the league, the local row
+          // is stale (e.g. from initializing off stale cache before a refetch
+          // brought in fresh data after an undo). Sync from prop instead.
+          if (!takenIds.has(localRow.playerId)) {
+            return { ...propRow, search: '', team: '', price: '0' };
+          }
           return localRow;
         }
         // Sync display info for saved data

@@ -35,3 +35,4 @@ yarn-error.log*
 # local overrides (machine-specific)
 vitest.config.local.mts
 src/test-setup.local.ts
+
