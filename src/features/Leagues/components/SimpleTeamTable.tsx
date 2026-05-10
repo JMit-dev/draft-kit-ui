@@ -18,12 +18,14 @@ import type { LeagueTeam, TakenPlayer } from '../types/leagues.types';
 import { usePlayers } from '@/shared/hooks/usePlayers';
 import { formatPlayerDisplay } from '@/shared/utils/format';
 import PlayerSearchInput from '@/shared/components/ui/PlayerSearchInput';
+import { getTeamColor } from '../utils/teamColors';
 
 type SimpleTeamTableProps = {
   team: LeagueTeam;
   mode: 'minorLeague' | 'taxiSquad';
   slotCount: number;
   startingBudget: number;
+  leagueType?: 'MLB' | 'AL' | 'NL';
   takenPlayers?: TakenPlayer[];
   allTakenPlayers?: TakenPlayer[];
   onSaveChanges?: (payload: {
@@ -31,6 +33,8 @@ type SimpleTeamTableProps = {
     rows: Array<{ rowId: string; playerId: string; price: number }>;
   }) => void;
   isSaving?: boolean;
+  readOnly?: boolean;
+  colorIndex?: number;
 };
 
 type SimpleTableRow = {
@@ -67,10 +71,13 @@ export default function SimpleTeamTable({
   mode,
   slotCount,
   startingBudget,
+  leagueType,
   takenPlayers = [],
   allTakenPlayers,
   onSaveChanges,
   isSaving = false,
+  readOnly = false,
+  colorIndex,
 }: SimpleTeamTableProps) {
   const [teamId, teamName] = team;
   const { players, isLoading: isLoadingPlayers } = usePlayers();
@@ -196,7 +203,7 @@ export default function SimpleTeamTable({
         gap={2}
         px={4}
         py={3}
-        bg="gray.50"
+        bg={colorIndex !== undefined ? getTeamColor(colorIndex) : 'gray.50'}
         borderBottomWidth={isCollapsed ? undefined : '1px'}
         onClick={() => setIsCollapsed((c) => !c)}
         cursor="pointer"
@@ -227,6 +234,7 @@ export default function SimpleTeamTable({
                       <PlayerSearchInput
                         players={eligiblePlayers}
                         unavailablePlayerIds={getUnavailableIds(rowIndex)}
+                        leagueType={leagueType}
                         value={row.search}
                         onChange={(searchText, playerId, playerTeam) =>
                           handlePlayerChange(
@@ -236,7 +244,7 @@ export default function SimpleTeamTable({
                             playerTeam,
                           )
                         }
-                        isDisabled={isSaving || isLoadingPlayers}
+                        isDisabled={isSaving || isLoadingPlayers || readOnly}
                         placeholder={
                           isLoadingPlayers
                             ? 'Loading players...'
@@ -252,34 +260,36 @@ export default function SimpleTeamTable({
             </Table>
           </TableContainer>
 
-          <Flex px={4} py={3} borderTopWidth="1px" bg="gray.50" gap={2}>
-            {onSaveChanges ? (
+          {!readOnly && (
+            <Flex px={4} py={3} borderTopWidth="1px" bg="gray.50" gap={2}>
+              {onSaveChanges ? (
+                <Button
+                  size="sm"
+                  colorScheme="green"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSave();
+                  }}
+                  isLoading={isSaving}
+                  isDisabled={!isDirty}
+                >
+                  Save Changes
+                </Button>
+              ) : null}
               <Button
                 size="sm"
-                colorScheme="blue"
+                colorScheme="red"
+                variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSave();
+                  handleClear();
                 }}
-                isLoading={isSaving}
-                isDisabled={!isDirty}
+                isDisabled={isSaving}
               >
-                Save Changes
+                Clear
               </Button>
-            ) : null}
-            <Button
-              size="sm"
-              colorScheme="red"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleClear();
-              }}
-              isDisabled={isSaving}
-            >
-              Clear
-            </Button>
-          </Flex>
+            </Flex>
+          )}
         </>
       )}
     </Box>

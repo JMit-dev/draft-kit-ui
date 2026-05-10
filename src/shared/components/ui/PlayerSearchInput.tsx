@@ -11,6 +11,7 @@ export function isPlayerAllowedForPosition(
   if (position === 'MiLB') return !player.mlbDebutDate;
   if (position === 'BENCH') return true;
   if (position === 'UTIL') return player.playerType === 'hitter';
+  if (position === 'P') return player.playerType === 'pitcher';
   if (position === 'CI')
     return player.positions.includes('1B') || player.positions.includes('3B');
   if (position === 'MI')
@@ -22,6 +23,7 @@ type PlayerSearchInputProps = {
   players: Player[];
   unavailablePlayerIds: Set<string>;
   position?: string;
+  leagueType?: 'MLB' | 'AL' | 'NL';
   value: string;
   onChange: (searchText: string, playerId: string, team: string) => void;
   isDisabled?: boolean;
@@ -33,6 +35,7 @@ export default function PlayerSearchInput({
   players,
   unavailablePlayerIds,
   position,
+  leagueType,
   value,
   onChange,
   isDisabled,
@@ -43,7 +46,8 @@ export default function PlayerSearchInput({
     (player) =>
       (position === undefined ||
         isPlayerAllowedForPosition(player, position)) &&
-      !unavailablePlayerIds.has(player._id),
+      !unavailablePlayerIds.has(player._id) &&
+      (!leagueType || leagueType === 'MLB' || player.league === leagueType),
   );
 
   function handleChange(inputValue: string) {

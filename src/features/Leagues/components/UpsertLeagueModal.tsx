@@ -8,6 +8,7 @@ import {
   FormLabel,
   Grid,
   GridItem,
+  HStack,
   Input,
   Modal,
   ModalBody,
@@ -16,6 +17,8 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Radio,
+  RadioGroup,
   Select,
   Text,
   VStack,
@@ -63,6 +66,7 @@ export default function UpsertLeagueModal({
     minorLeagueSlotsPerTeam: string;
     taxiSquadPlayersPerTeam: string;
     draftType: 'auction';
+    leagueType: 'MLB' | 'AL' | 'NL';
     rosterSlots: Record<keyof RosterSlots, string>;
     battingCategories: string[];
     pitchingCategories: string[];
@@ -85,6 +89,7 @@ export default function UpsertLeagueModal({
         initialLeague?.taxiSquadPlayersPerTeam ?? 0,
       ),
       draftType: 'auction',
+      leagueType: initialLeague?.leagueType ?? 'MLB',
       rosterSlots: ROSTER_POSITIONS.reduce(
         (acc, position) => {
           const value =
@@ -123,6 +128,7 @@ export default function UpsertLeagueModal({
       form.leagueName.trim().length > 0 &&
       !Number.isNaN(parsedTeams) &&
       parsedTeams > 1 &&
+      parsedTeams <= 16 &&
       !Number.isNaN(parsedTotalBudget) &&
       parsedTotalBudget >= 0 &&
       !Number.isNaN(parsedMinorLeagueSlots) &&
@@ -208,6 +214,7 @@ export default function UpsertLeagueModal({
       name: form.leagueName.trim(),
       teams: Math.max(2, parsedTeams),
       draftType: form.draftType,
+      leagueType: form.leagueType,
       rosterSlots,
       totalBudget: Math.max(0, parsedTotalBudget),
       minorLeagueSlotsPerTeam: Math.max(0, parsedMinorLeagueSlots),
@@ -256,6 +263,7 @@ export default function UpsertLeagueModal({
                 id="teams"
                 type="number"
                 min={2}
+                max={16}
                 value={form.teams}
                 onChange={(e) => {
                   const next = e.target.value;
@@ -263,6 +271,11 @@ export default function UpsertLeagueModal({
                   setForm((prev) => ({ ...prev, teams: next }));
                 }}
               />
+              {Number.parseInt(form.teams, 10) > 16 && (
+                <Text color="red.500" fontSize="sm" mt={1}>
+                  Maximum 16 teams allowed.
+                </Text>
+              )}
             </FormControl>
 
             <FormControl isRequired>
@@ -279,6 +292,25 @@ export default function UpsertLeagueModal({
               >
                 <option value="auction">Auction</option>
               </Select>
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel>League</FormLabel>
+              <RadioGroup
+                value={form.leagueType}
+                onChange={(val) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    leagueType: val as 'MLB' | 'AL' | 'NL',
+                  }))
+                }
+              >
+                <HStack spacing={6}>
+                  <Radio value="MLB">MLB</Radio>
+                  <Radio value="AL">AL</Radio>
+                  <Radio value="NL">NL</Radio>
+                </HStack>
+              </RadioGroup>
             </FormControl>
 
             <FormControl isRequired>
@@ -424,7 +456,7 @@ export default function UpsertLeagueModal({
             Cancel
           </Button>
           <Button
-            colorScheme="blue"
+            colorScheme="green"
             onClick={handleSubmit}
             isDisabled={!canSubmit}
             isLoading={upsertLeagueMutation.isPending}

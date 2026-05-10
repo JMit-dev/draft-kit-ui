@@ -22,6 +22,7 @@ import type {
   TakenPlayer,
 } from '../types/leagues.types';
 import { DEFAULT_ROSTER_SLOTS, ROSTER_POSITIONS } from '../utils/leagueForm';
+import { getTeamColor } from '../utils/teamColors';
 import { usePlayers } from '@/shared/hooks/usePlayers';
 import { formatPlayerDisplay } from '@/shared/utils/format';
 import PlayerSearchInput from '@/shared/components/ui/PlayerSearchInput';
@@ -32,6 +33,7 @@ type LeagueTeamTableProps = {
   takenPlayers?: TakenPlayer[];
   allTakenPlayers?: TakenPlayer[];
   startingBudget: number;
+  leagueType?: 'MLB' | 'AL' | 'NL';
   onSaveChanges?: (payload: {
     teamName: string;
     rows: Array<{
@@ -50,6 +52,7 @@ type LeagueTeamTableProps = {
   isSaving?: boolean;
   readOnly?: boolean;
   draftMode?: boolean;
+  colorIndex?: number;
 };
 
 type TeamTableRow = {
@@ -109,6 +112,7 @@ export default function LeagueTeamTable({
   takenPlayers = [],
   allTakenPlayers,
   startingBudget,
+  leagueType,
   onSaveChanges,
   onDirtyChange,
   onRowsChange,
@@ -117,6 +121,7 @@ export default function LeagueTeamTable({
   isSaving = false,
   readOnly = false,
   draftMode = false,
+  colorIndex,
 }: LeagueTeamTableProps) {
   const toast = useToast();
   const [teamId, teamName] = team;
@@ -388,7 +393,7 @@ export default function LeagueTeamTable({
         gap={2}
         px={4}
         py={3}
-        bg="gray.50"
+        bg={colorIndex !== undefined ? getTeamColor(colorIndex) : 'gray.50'}
         borderBottomWidth={isCollapsed ? undefined : '1px'}
         onClick={() => setIsCollapsed((c) => !c)}
         cursor="pointer"
@@ -431,6 +436,7 @@ export default function LeagueTeamTable({
                         players={availablePlayers}
                         unavailablePlayerIds={getUnavailablePlayerIds(rowIndex)}
                         position={row.position}
+                        leagueType={leagueType}
                         value={row.search}
                         onChange={(searchText, playerId, team) =>
                           handlePlayerSearchChange(
@@ -483,7 +489,7 @@ export default function LeagueTeamTable({
               {onSaveChanges ? (
                 <Button
                   size="sm"
-                  colorScheme="blue"
+                  colorScheme="green"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleSaveChanges();

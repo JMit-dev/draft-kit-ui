@@ -12,7 +12,7 @@ import type {
   TakenPlayer,
 } from '@/features/Leagues/types/leagues.types';
 import { useUpsertLeague } from '@/features/Leagues/hooks/useUpsertLeague';
-import { apiClient } from '@/shared/utils/api-client';
+import { localApiClient } from '@/shared/utils/api-client';
 import { toDraftLeagueInput } from './utils/draftState';
 import DraftLeftPanel from './components/left/DraftLeftPanel';
 import DraftMiddlePanel from './components/middle/DraftMiddlePanel';
@@ -90,7 +90,7 @@ export default function DraftPage() {
   async function handleFinishDraft(name: string) {
     if (!selectedLeague) return;
 
-    const response = await apiClient.post<LeagueResponse>(
+    const response = await localApiClient.post<LeagueResponse>(
       `/api/leagues/${selectedLeague._id}/finish-draft`,
       { name },
     );
@@ -139,6 +139,7 @@ export default function DraftPage() {
           startingBudget={selectedLeague?.totalBudget ?? 0}
           rosterSlots={selectedLeague?.rosterSlots}
           minorLeagueSlots={selectedLeague?.minorLeagueSlotsPerTeam ?? 0}
+          leagueType={selectedLeague?.leagueType}
           onPickEntered={handlePickEntered}
           onUndo={handleUndo}
           onFinishDraft={handleFinishDraft}
