@@ -32,6 +32,7 @@ type SimpleTeamTableProps = {
     rows: Array<{ rowId: string; playerId: string; price: number }>;
   }) => void;
   isSaving?: boolean;
+  readOnly?: boolean;
 };
 
 type SimpleTableRow = {
@@ -73,6 +74,7 @@ export default function SimpleTeamTable({
   allTakenPlayers,
   onSaveChanges,
   isSaving = false,
+  readOnly = false,
 }: SimpleTeamTableProps) {
   const [teamId, teamName] = team;
   const { players, isLoading: isLoadingPlayers } = usePlayers();
@@ -239,7 +241,7 @@ export default function SimpleTeamTable({
                             playerTeam,
                           )
                         }
-                        isDisabled={isSaving || isLoadingPlayers}
+                        isDisabled={isSaving || isLoadingPlayers || readOnly}
                         placeholder={
                           isLoadingPlayers
                             ? 'Loading players...'
@@ -255,34 +257,36 @@ export default function SimpleTeamTable({
             </Table>
           </TableContainer>
 
-          <Flex px={4} py={3} borderTopWidth="1px" bg="gray.50" gap={2}>
-            {onSaveChanges ? (
+          {!readOnly && (
+            <Flex px={4} py={3} borderTopWidth="1px" bg="gray.50" gap={2}>
+              {onSaveChanges ? (
+                <Button
+                  size="sm"
+                  colorScheme="green"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSave();
+                  }}
+                  isLoading={isSaving}
+                  isDisabled={!isDirty}
+                >
+                  Save Changes
+                </Button>
+              ) : null}
               <Button
                 size="sm"
-                colorScheme="green"
+                colorScheme="red"
+                variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSave();
+                  handleClear();
                 }}
-                isLoading={isSaving}
-                isDisabled={!isDirty}
+                isDisabled={isSaving}
               >
-                Save Changes
+                Clear
               </Button>
-            ) : null}
-            <Button
-              size="sm"
-              colorScheme="red"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleClear();
-              }}
-              isDisabled={isSaving}
-            >
-              Clear
-            </Button>
-          </Flex>
+            </Flex>
+          )}
         </>
       )}
     </Box>

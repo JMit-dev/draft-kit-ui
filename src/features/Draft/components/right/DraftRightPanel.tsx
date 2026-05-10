@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Button, Flex, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, ButtonGroup, Flex, Stack, Text } from '@chakra-ui/react';
 import type {
   League,
   TakenPlayer,
 } from '@/features/Leagues/types/leagues.types';
 import LeagueTeamTable from '@/features/Leagues/components/LeagueTeamTable';
+import SimpleTeamTable from '@/features/Leagues/components/SimpleTeamTable';
 
 type TeamRow = { rowId: string; playerId: string; price: number };
 
@@ -21,6 +22,9 @@ export default function DraftRightPanel({
   onSaveRosters,
   isSavingRosters = false,
 }: Props) {
+  const [rosterView, setRosterView] = useState<
+    'main' | 'minorLeague' | 'taxiSquad'
+  >('main');
   const [dirtyTeamIds, setDirtyTeamIds] = useState<Set<string>>(new Set());
   const [currentRowsByTeam, setCurrentRowsByTeam] = useState<
     Record<string, TeamRow[]>
@@ -157,28 +161,84 @@ export default function DraftRightPanel({
 
   return (
     <Flex direction="column" h="100%">
-      <Box flex="9" overflowY="auto">
+      <Box
+        p={3}
+        borderBottomWidth="1px"
+        borderColor="gray.200"
+        display="flex"
+        justifyContent="center"
+      >
+        <ButtonGroup isAttached variant="outline" size="sm">
+          <Button
+            onClick={() => setRosterView('main')}
+            colorScheme={rosterView === 'main' ? 'green' : undefined}
+            variant={rosterView === 'main' ? 'solid' : 'outline'}
+          >
+            Main Roster
+          </Button>
+          <Button
+            onClick={() => setRosterView('minorLeague')}
+            colorScheme={rosterView === 'minorLeague' ? 'green' : undefined}
+            variant={rosterView === 'minorLeague' ? 'solid' : 'outline'}
+          >
+            Minor League
+          </Button>
+          <Button
+            onClick={() => setRosterView('taxiSquad')}
+            colorScheme={rosterView === 'taxiSquad' ? 'green' : undefined}
+            variant={rosterView === 'taxiSquad' ? 'solid' : 'outline'}
+          >
+            Taxi Squad
+          </Button>
+        </ButtonGroup>
+      </Box>
+
+      <Box flex="1" overflowY="auto">
         <Stack spacing={4} p={4}>
-          {teams.map((team) => {
-            const [teamId] = team;
-            return (
-              <LeagueTeamTable
-                key={teamId}
-                team={team}
-                rosterSlots={league.rosterSlots}
-                allTakenPlayers={takenPlayers}
-                takenPlayers={takenPlayersByTeam[teamId] ?? []}
-                startingBudget={league.totalBudget ?? 0}
-                leagueType={league.leagueType}
-                onDirtyChange={handleDirtyChange}
-                onRowsChange={handleRowsChange}
-                onCrossTeamTransfer={handleCrossTeamTransfer}
-                forcedEmptyPlayerIds={forcedEmptyPlayersByTeam[teamId]}
-                isSaving={isSavingRosters}
-                draftMode
-              />
-            );
-          })}
+          {rosterView === 'main' &&
+            teams.map((team) => {
+              const [teamId] = team;
+              return (
+                <LeagueTeamTable
+                  key={teamId}
+                  team={team}
+                  rosterSlots={league.rosterSlots}
+                  allTakenPlayers={takenPlayers}
+                  takenPlayers={takenPlayersByTeam[teamId] ?? []}
+                  startingBudget={league.totalBudget ?? 0}
+                  leagueType={league.leagueType}
+                  onDirtyChange={handleDirtyChange}
+                  onRowsChange={handleRowsChange}
+                  onCrossTeamTransfer={handleCrossTeamTransfer}
+                  forcedEmptyPlayerIds={forcedEmptyPlayersByTeam[teamId]}
+                  isSaving={isSavingRosters}
+                  draftMode
+                />
+              );
+            })}
+
+          {(rosterView === 'minorLeague' || rosterView === 'taxiSquad') &&
+            teams.map((team) => {
+              const [teamId] = team;
+              return (
+                <SimpleTeamTable
+                  key={teamId}
+                  team={team}
+                  mode={rosterView}
+                  slotCount={
+                    rosterView === 'minorLeague'
+                      ? (league.minorLeagueSlotsPerTeam ?? 0)
+                      : (league.taxiSquadPlayersPerTeam ?? 0)
+                  }
+                  startingBudget={league.totalBudget ?? 0}
+                  leagueType={league.leagueType}
+                  takenPlayers={takenPlayersByTeam[teamId] ?? []}
+                  allTakenPlayers={takenPlayers}
+                  readOnly
+                />
+              );
+            })}
+
           {teams.length === 0 && (
             <Text color="gray.400" fontSize="sm">
               No teams found in this league.
@@ -187,18 +247,14 @@ export default function DraftRightPanel({
         </Stack>
       </Box>
 
-      <Flex
-        flex="1"
-        borderTopWidth="1px"
-        borderColor="gray.200"
-        p={4}
-        align="center"
-      >
+      <Flex borderTopWidth="1px" borderColor="gray.200" p={4} align="center">
         <Button
           size="sm"
           colorScheme="green"
           onClick={handleSave}
-          isDisabled={!hasDirtyChanges || isSavingRosters}
+          isDisabled={
+            rosterView !== 'main' || !hasDirtyChanges || isSavingRosters
+          }
           isLoading={isSavingRosters}
         >
           Save Changes
