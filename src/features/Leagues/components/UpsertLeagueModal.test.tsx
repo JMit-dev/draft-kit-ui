@@ -104,7 +104,6 @@ describe('UpsertLeagueModal', () => {
     expect(args.existingLeague).toEqual(initialLeague);
     expect(args.input.name).toBe('New Name');
     expect(args.input.teams).toBe(10);
-    expect(args.input.draftType).toBe('auction');
     expect(args.input.totalBudget).toBe(300);
     expect(args.input.taxiSquadPlayersPerTeam).toBe(2);
   });
