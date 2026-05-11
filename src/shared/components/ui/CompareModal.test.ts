@@ -206,4 +206,12 @@ describe('getStatColors', () => {
       expect(result.rightColor).toBe('red.500');
     }
   });
+
+  it('handles all batting lower-is-better stats', () => {
+    for (const stat of BATTING_LOWER_IS_BETTER) {
+      const result = getStatColors(1, 5, stat, 'Batting');
+      expect(result.leftColor).toBe('green.500');
+      expect(result.rightColor).toBe('red.500');
+    }
+  });
 });
