@@ -62,6 +62,7 @@ type TeamTableRow = {
   search: string;
   team: string;
   price: string;
+  contract: string;
 };
 
 function buildTeamRows(
@@ -81,6 +82,7 @@ function buildTeamRows(
         search: '',
         team: '',
         price: String(player?.[3] ?? 0),
+        contract: '',
       };
     }),
   );
@@ -172,6 +174,7 @@ export default function LeagueTeamTable({
               ...propRow,
               search: formatPlayerDisplay(matchingPlayer),
               team: matchingPlayer.team,
+              contract: localRow?.contract ?? '',
             }
           : propRow;
       }),
@@ -342,9 +345,17 @@ export default function LeagueTeamTable({
               playerId,
               team,
               price: salary,
+              contract: '',
             };
           if (index === sourceIndex)
-            return { ...row, playerId: '', search: '', team: '', price: '0' };
+            return {
+              ...row,
+              playerId: '',
+              search: '',
+              team: '',
+              price: '0',
+              contract: '',
+            };
           return row;
         });
       });
@@ -354,7 +365,22 @@ export default function LeagueTeamTable({
       prev.map((row, index) =>
         index !== rowIndex
           ? row
-          : { ...row, search: searchText, playerId, team },
+          : {
+              ...row,
+              search: searchText,
+              playerId,
+              team,
+              contract: playerId !== row.playerId ? '' : row.contract,
+            },
+      ),
+    );
+  }
+
+  function handleContractChange(rowIndex: number, value: string) {
+    if (value.length > 2) return;
+    setLocalRows((prev) =>
+      prev.map((row, index) =>
+        index === rowIndex ? { ...row, contract: value } : row,
       ),
     );
   }
@@ -367,6 +393,7 @@ export default function LeagueTeamTable({
         search: '',
         team: '',
         price: '0',
+        contract: '',
       })),
     );
   }
@@ -454,6 +481,7 @@ export default function LeagueTeamTable({
                   <Th>Player</Th>
                   <Th>Team</Th>
                   <Th isNumeric>Price</Th>
+                  {!draftMode && <Th>Contract</Th>}
                 </Tr>
               </Thead>
               <Tbody>
@@ -507,6 +535,22 @@ export default function LeagueTeamTable({
                         isDisabled={isSaving || readOnly || draftMode}
                       />
                     </Td>
+                    {!draftMode && (
+                      <Td>
+                        <Input
+                          size="sm"
+                          maxLength={2}
+                          value={row.contract}
+                          onChange={(e) =>
+                            handleContractChange(rowIndex, e.target.value)
+                          }
+                          width="50px"
+                          minWidth="50px"
+                          placeholder="--"
+                          isDisabled={isSaving || readOnly}
+                        />
+                      </Td>
+                    )}
                   </Tr>
                 ))}
               </Tbody>

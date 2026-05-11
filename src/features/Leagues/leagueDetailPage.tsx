@@ -389,7 +389,7 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
               {rosterView === 'taxiSquad' && 'Taxi Squads'}
             </Heading>
             <SimpleGrid
-              columns={{ base: 1, xl: 3 }}
+              columns={{ base: 1, xl: 2 }}
               spacing={4}
               alignItems="start"
             >
