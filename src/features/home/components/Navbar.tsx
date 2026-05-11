@@ -22,7 +22,12 @@ export default function Navbar() {
     <Box px={6} py={3} borderBottomWidth="2px" borderColor="green.600">
       <Flex align="center">
         <Link href="/">
-          <Image src="/logo.png" alt="Logo" boxSize="70px" cursor="pointer" />
+          <Image
+            src="/larger_logo.png"
+            alt="Logo"
+            boxSize="70px"
+            cursor="pointer"
+          />
         </Link>
 
         <Heading size="lg" color="green.600" ml={4} fontFamily="heading">

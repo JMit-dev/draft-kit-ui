@@ -6,7 +6,7 @@ import Navbar from '@/features/home/components/Navbar';
 export const metadata: Metadata = {
   title: 'Draft Kit UI',
   description: 'Fantasy Baseball Draft Management',
-  icons: { icon: '/logo.png' },
+  icons: { icon: '/larger_logo.png' },
 };
 
 export default function RootLayout({
