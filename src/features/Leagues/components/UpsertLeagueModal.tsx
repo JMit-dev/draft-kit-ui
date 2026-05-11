@@ -19,7 +19,6 @@ import {
   ModalOverlay,
   Radio,
   RadioGroup,
-  Select,
   Text,
   VStack,
   Wrap,
@@ -276,22 +275,6 @@ export default function UpsertLeagueModal({
                   Maximum 16 teams allowed.
                 </Text>
               )}
-            </FormControl>
-
-            <FormControl isRequired>
-              <FormLabel htmlFor="draftType">Draft Type</FormLabel>
-              <Select
-                id="draftType"
-                value={form.draftType}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    draftType: e.target.value as 'auction',
-                  }))
-                }
-              >
-                <option value="auction">Auction</option>
-              </Select>
             </FormControl>
 
             <FormControl isRequired>

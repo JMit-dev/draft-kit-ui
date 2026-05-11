@@ -35,6 +35,7 @@ import { usePlayers } from '@/shared/hooks/usePlayers';
 import { formatPlayerDisplay } from '@/shared/utils/format';
 import PlayerSearchInput from '@/shared/components/ui/PlayerSearchInput';
 import { autoAssignSlot } from '../../utils/autoAssign';
+import { getTeamColor } from '@/features/Leagues/utils/teamColors';
 
 type DraftBoardProps = {
   teams?: LeagueTeam[];
@@ -91,6 +92,11 @@ export default function DraftBoard({
   const takenPlayerIds = useMemo(
     () => new Set(takenPlayers.map(([id]) => id)),
     [takenPlayers],
+  );
+
+  const teamColorMap = useMemo(
+    () => new Map(teams.map(([id], index) => [id, index])),
+    [teams],
   );
 
   function getTeamName(teamId: string): string {
@@ -233,8 +239,17 @@ export default function DraftBoard({
           {displayedDraftPicks.map(
             ([pickNum, nominatingId, winningId, pid, sal]) => {
               const player = players.find((p) => p._id === pid);
+              const colorIndex = teamColorMap.get(winningId);
               return (
-                <Tr key={pickNum}>
+                <Tr
+                  key={pickNum}
+                  bg={
+                    colorIndex !== undefined
+                      ? getTeamColor(colorIndex)
+                      : undefined
+                  }
+                  sx={{ '& td': { borderBottom: 'none' } }}
+                >
                   <Td>{pickNum}</Td>
                   <Td>{getTeamName(nominatingId)}</Td>
                   <Td>
@@ -245,6 +260,8 @@ export default function DraftBoard({
                           {player.positions.join('/')} &middot; {player.team}
                         </Text>
                       </Box>
+                    ) : isLoading ? (
+                      'Loading players...'
                     ) : (
                       pid
                     )}

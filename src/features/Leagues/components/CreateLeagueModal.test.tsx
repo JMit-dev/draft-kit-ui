@@ -34,7 +34,6 @@ describe('UpsertLeagueModal (create)', () => {
     expect(screen.getByRole('dialog', { name: /create league/i })).toBeTruthy();
     expect(screen.getByLabelText(/league name/i)).toBeTruthy();
     expect(screen.getByLabelText(/# of teams/i)).toBeTruthy();
-    expect(screen.getByLabelText(/draft type/i)).toBeTruthy();
     expect(screen.getByLabelText(/starting budget/i)).toBeTruthy();
   });
 
