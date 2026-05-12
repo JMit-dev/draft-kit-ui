@@ -40,12 +40,18 @@ type LeagueTeamTableProps = {
       rowId: string;
       playerId: string;
       price: number;
+      contract: string;
     }>;
   }) => void;
   onDirtyChange?: (teamId: string, isDirty: boolean) => void;
   onRowsChange?: (
     teamId: string,
-    rows: Array<{ rowId: string; playerId: string; price: number }>,
+    rows: Array<{
+      rowId: string;
+      playerId: string;
+      price: number;
+      contract: string;
+    }>,
   ) => void;
   onCrossTeamTransfer?: (playerId: string, destTeamId: string) => void;
   forcedEmptyPlayerIds?: Set<string>;
@@ -82,7 +88,7 @@ function buildTeamRows(
         search: '',
         team: '',
         price: String(player?.[3] ?? 0),
-        contract: '',
+        contract: player?.[4] ?? '',
       };
     }),
   );
@@ -263,7 +269,8 @@ export default function LeagueTeamTable({
     rows.some(
       (row, index) =>
         row.price !== propRows[index]?.price ||
-        row.playerId !== propRows[index]?.playerId,
+        row.playerId !== propRows[index]?.playerId ||
+        row.contract !== propRows[index]?.contract,
     );
 
   useEffect(() => {
@@ -277,6 +284,7 @@ export default function LeagueTeamTable({
         rowId: row.rowId,
         playerId: row.playerId,
         price: parsePrice(row.price),
+        contract: row.contract,
       })),
     );
   }, [teamId, localRows, onRowsChange]);
@@ -423,6 +431,7 @@ export default function LeagueTeamTable({
         rowId: row.rowId,
         playerId: row.playerId,
         price: parsePrice(row.price),
+        contract: row.contract,
       })),
     });
   }

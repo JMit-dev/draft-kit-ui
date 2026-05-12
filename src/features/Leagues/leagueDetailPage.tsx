@@ -136,7 +136,12 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   function updateTeamTakenPlayers(
     currentTakenPlayers: TakenPlayer[],
     teamId: string,
-    rows: Array<{ rowId: string; playerId: string; price: number }>,
+    rows: Array<{
+      rowId: string;
+      playerId: string;
+      price: number;
+      contract?: string;
+    }>,
   ): TakenPlayer[] {
     const rowsBySlot = new Map(rows.map((row) => [row.rowId, row]));
     const updatedTakenPlayers: TakenPlayer[] = [];
@@ -162,13 +167,20 @@ export default function LeagueDetailPage({ leagueId }: { leagueId: string }) {
           teamId,
           positionSlot,
           matchingRow.price,
+          matchingRow.contract ?? '',
         ]);
       }
     });
 
     rows.forEach((row) => {
       if (handledSlots.has(row.rowId) || !row.playerId) return;
-      updatedTakenPlayers.push([row.playerId, teamId, row.rowId, row.price]);
+      updatedTakenPlayers.push([
+        row.playerId,
+        teamId,
+        row.rowId,
+        row.price,
+        row.contract ?? '',
+      ]);
     });
 
     return updatedTakenPlayers;
