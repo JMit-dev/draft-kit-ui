@@ -500,8 +500,7 @@ export default function LeagueTeamTable({
                   const rowPlayer = row.playerId
                     ? players.find((player) => player._id === row.playerId)
                     : undefined;
-                  const canOpenNotebook =
-                    draftMode && !!rowPlayer && !!onPlayerNotebookOpen;
+                  const canOpenNotebook = !!rowPlayer && !!onPlayerNotebookOpen;
 
                   return (
                     <Tr key={row.rowId}>
@@ -526,10 +525,12 @@ export default function LeagueTeamTable({
                           isDisabled={
                             isSaving ||
                             isLoadingPlayers ||
-                            readOnly ||
+                            (readOnly && !canOpenNotebook) ||
                             (draftMode && !!row.playerId && !canOpenNotebook)
                           }
-                          isReadOnly={canOpenNotebook}
+                          isReadOnly={
+                            canOpenNotebook && (draftMode || readOnly)
+                          }
                           onClick={
                             canOpenNotebook
                               ? () => onPlayerNotebookOpen(rowPlayer)
