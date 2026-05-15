@@ -125,8 +125,14 @@ export default function RankingsTable() {
           return;
         }
 
-        setAllPlayers(allData);
-        setPlayers(allData.slice(0, 50));
+        const sorted = allData.slice().sort((a, b) => {
+          const lastA = a.name.split(' ').pop() ?? '';
+          const lastB = b.name.split(' ').pop() ?? '';
+          return lastA.localeCompare(lastB);
+        });
+
+        setAllPlayers(sorted);
+        setPlayers(sorted.slice(0, 50));
         setPositions(
           Array.from(
             new Set(allData.flatMap((player) => player.positions)),
