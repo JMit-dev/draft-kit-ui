@@ -31,6 +31,7 @@ type PlayerSearchInputProps = {
   onClick?: () => void;
   placeholder?: string;
   listId: string;
+  width?: string;
 };
 
 export default function PlayerSearchInput({
@@ -45,6 +46,7 @@ export default function PlayerSearchInput({
   onClick,
   placeholder = 'Search players...',
   listId,
+  width,
 }: PlayerSearchInputProps) {
   const allowedPlayers = players.filter(
     (player) =>
@@ -81,6 +83,7 @@ export default function PlayerSearchInput({
         onClick={onClick}
         cursor={onClick ? 'pointer' : undefined}
         _hover={onClick ? { borderColor: 'green.400' } : undefined}
+        width={width}
       />
       <datalist id={listId}>
         {allowedPlayers.map((player) => (

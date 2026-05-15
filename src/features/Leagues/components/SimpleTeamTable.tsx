@@ -237,8 +237,17 @@ export default function SimpleTeamTable({
                   const canOpenNotebook = !!rowPlayer && !!onPlayerNotebookOpen;
 
                   return (
-                    <Tr key={row.rowId}>
-                      <Td>
+                    <Tr
+                      key={row.rowId}
+                      onClick={
+                        canOpenNotebook
+                          ? () => onPlayerNotebookOpen(rowPlayer)
+                          : undefined
+                      }
+                      cursor={canOpenNotebook ? 'pointer' : undefined}
+                      _hover={canOpenNotebook ? { bg: 'green.50' } : undefined}
+                    >
+                      <Td onClick={(e) => e.stopPropagation()}>
                         <PlayerSearchInput
                           players={eligiblePlayers}
                           unavailablePlayerIds={getUnavailableIds(rowIndex)}
@@ -252,23 +261,14 @@ export default function SimpleTeamTable({
                               playerTeam,
                             )
                           }
-                          isDisabled={
-                            isSaving ||
-                            isLoadingPlayers ||
-                            (readOnly && !canOpenNotebook)
-                          }
-                          isReadOnly={canOpenNotebook && readOnly}
-                          onClick={
-                            canOpenNotebook
-                              ? () => onPlayerNotebookOpen(rowPlayer)
-                              : undefined
-                          }
+                          isDisabled={isSaving || isLoadingPlayers || readOnly}
                           placeholder={
                             isLoadingPlayers
                               ? 'Loading players...'
                               : 'Search players...'
                           }
                           listId={`player-options-${row.rowId}-${teamId}`}
+                          width="160px"
                         />
                       </Td>
                       <Td>{row.team || '-'}</Td>

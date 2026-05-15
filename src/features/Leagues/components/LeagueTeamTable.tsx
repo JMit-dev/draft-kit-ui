@@ -503,9 +503,18 @@ export default function LeagueTeamTable({
                   const canOpenNotebook = !!rowPlayer && !!onPlayerNotebookOpen;
 
                   return (
-                    <Tr key={row.rowId}>
+                    <Tr
+                      key={row.rowId}
+                      onClick={
+                        canOpenNotebook
+                          ? () => onPlayerNotebookOpen(rowPlayer)
+                          : undefined
+                      }
+                      cursor={canOpenNotebook ? 'pointer' : undefined}
+                      _hover={canOpenNotebook ? { bg: 'green.50' } : undefined}
+                    >
                       <Td>{row.position}</Td>
-                      <Td>
+                      <Td onClick={(e) => e.stopPropagation()}>
                         <PlayerSearchInput
                           players={availablePlayers}
                           unavailablePlayerIds={getUnavailablePlayerIds(
@@ -525,16 +534,8 @@ export default function LeagueTeamTable({
                           isDisabled={
                             isSaving ||
                             isLoadingPlayers ||
-                            (readOnly && !canOpenNotebook) ||
-                            (draftMode && !!row.playerId && !canOpenNotebook)
-                          }
-                          isReadOnly={
-                            canOpenNotebook && (draftMode || readOnly)
-                          }
-                          onClick={
-                            canOpenNotebook
-                              ? () => onPlayerNotebookOpen(rowPlayer)
-                              : undefined
+                            readOnly ||
+                            (draftMode && !!row.playerId)
                           }
                           placeholder={
                             isLoadingPlayers
@@ -542,10 +543,11 @@ export default function LeagueTeamTable({
                               : 'Search players...'
                           }
                           listId={`player-options-${row.rowId}`}
+                          width="160px"
                         />
                       </Td>
                       <Td>{row.team || '-'}</Td>
-                      <Td isNumeric>
+                      <Td isNumeric onClick={(e) => e.stopPropagation()}>
                         <Input
                           type="number"
                           min={0}
@@ -563,7 +565,7 @@ export default function LeagueTeamTable({
                         />
                       </Td>
                       {!draftMode && (
-                        <Td>
+                        <Td onClick={(e) => e.stopPropagation()}>
                           <Input
                             size="sm"
                             maxLength={2}
