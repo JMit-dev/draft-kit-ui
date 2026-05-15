@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Flex, Input, Text } from '@chakra-ui/react';
+import { Box, Flex } from '@chakra-ui/react';
 import type {
   DraftPick,
   LeagueTeam,
@@ -8,6 +8,7 @@ import type {
   TakenPlayer,
 } from '@/features/Leagues/types/leagues.types';
 import DraftBoard from './DraftBoard';
+import ValuationSearch from './ValuationSearch';
 
 type DraftMiddlePanelProps = {
   teams?: LeagueTeam[];
@@ -58,12 +59,9 @@ export default function DraftMiddlePanel({
           readOnly={readOnly}
         />
       </Box>
-      <Flex flex="1" direction="column" gap={3} p={4}>
-        <Text color="gray.400" fontSize="sm">
-          Users will query API using search bar
-        </Text>
-        <Input placeholder="Search..." size="sm" />
-      </Flex>
+      <Box flex="1" overflow="hidden" p={4}>
+        <ValuationSearch />
+      </Box>
     </Flex>
   );
 }
