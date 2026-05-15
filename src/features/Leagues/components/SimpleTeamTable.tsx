@@ -245,7 +245,7 @@ export default function SimpleTeamTable({
                           : undefined
                       }
                       cursor={canOpenNotebook ? 'pointer' : undefined}
-                      _hover={canOpenNotebook ? { bg: 'green.50' } : undefined}
+                      _hover={canOpenNotebook ? { bg: 'green.100' } : undefined}
                     >
                       <Td>
                         <PlayerSearchInput

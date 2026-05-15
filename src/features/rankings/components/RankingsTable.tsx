@@ -33,7 +33,7 @@ import {
 } from '@chakra-ui/react';
 import { externalApiClient } from '@/shared/utils/api-client';
 
-type Player = {
+export type RankingsPlayer = {
   _id: string;
   name: string;
   team: string;
@@ -47,6 +47,8 @@ type Player = {
   batSide?: string;
   pitchHand?: string;
 };
+
+type Player = RankingsPlayer;
 
 const DEPTH_CHART_STATUSES = [
   'starter',
@@ -69,7 +71,11 @@ type PlayersResponse = {
   };
 };
 
-export default function RankingsTable() {
+export default function RankingsTable({
+  onPlayerClick,
+}: {
+  onPlayerClick: (player: Player) => void;
+}) {
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [positions, setPositions] = useState<string[]>([]);
@@ -363,7 +369,7 @@ export default function RankingsTable() {
       </Wrap>
 
       <TableContainer>
-        <Table variant="striped" colorScheme="teal">
+        <Table variant="simple">
           <Thead>
             <Tr>
               <Th>Rank</Th>
@@ -380,7 +386,12 @@ export default function RankingsTable() {
           </Thead>
           <Tbody>
             {players.map((player, index) => (
-              <Tr key={player._id}>
+              <Tr
+                key={player._id}
+                onClick={() => onPlayerClick(player)}
+                cursor="pointer"
+                _hover={{ bg: 'green.100' }}
+              >
                 <Td>{index + 1}</Td>
                 <Td>{player.name}</Td>
                 <Td>{player.team}</Td>
