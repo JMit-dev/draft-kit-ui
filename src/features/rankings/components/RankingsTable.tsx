@@ -33,7 +33,7 @@ import {
 } from '@chakra-ui/react';
 import { externalApiClient } from '@/shared/utils/api-client';
 
-type Player = {
+export type RankingsPlayer = {
   _id: string;
   name: string;
   team: string;
@@ -47,6 +47,8 @@ type Player = {
   batSide?: string;
   pitchHand?: string;
 };
+
+type Player = RankingsPlayer;
 
 const DEPTH_CHART_STATUSES = [
   'starter',
@@ -69,14 +71,18 @@ type PlayersResponse = {
   };
 };
 
-export default function RankingsTable() {
+export default function RankingsTable({
+  onPlayerClick,
+}: {
+  onPlayerClick: (player: Player) => void;
+}) {
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [positions, setPositions] = useState<string[]>([]);
   const [teams, setTeams] = useState<string[]>([]);
   const [leagues, setLeagues] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
-  const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [selectedLeagues, setSelectedLeagues] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -125,8 +131,14 @@ export default function RankingsTable() {
           return;
         }
 
-        setAllPlayers(allData);
-        setPlayers(allData.slice(0, 50));
+        const sorted = allData.slice().sort((a, b) => {
+          const lastA = a.name.split(' ').pop() ?? '';
+          const lastB = b.name.split(' ').pop() ?? '';
+          return lastA.localeCompare(lastB);
+        });
+
+        setAllPlayers(sorted);
+        setPlayers(sorted.slice(0, 50));
         setPositions(
           Array.from(
             new Set(allData.flatMap((player) => player.positions)),
@@ -166,7 +178,8 @@ export default function RankingsTable() {
 
     const filteredPlayers = allPlayers.filter((player) => {
       const matchesPosition =
-        !selectedPosition || player.positions.includes(selectedPosition);
+        selectedPositions.length === 0 ||
+        selectedPositions.some((pos) => player.positions.includes(pos));
       const matchesSearch =
         !normalizedSearch ||
         player.name.toLowerCase().includes(normalizedSearch);
@@ -198,7 +211,7 @@ export default function RankingsTable() {
     allPlayers,
     appliedSearch,
     selectedLeagues,
-    selectedPosition,
+    selectedPositions,
     selectedStatuses,
     selectedDepthStatuses,
     selectedTeams,
@@ -336,8 +349,8 @@ export default function RankingsTable() {
       <Wrap mb={4} spacing={2}>
         <WrapItem>
           <Button
-            colorScheme={selectedPosition === null ? 'teal' : 'gray'}
-            onClick={() => setSelectedPosition(null)}
+            colorScheme={selectedPositions.length === 0 ? 'green' : 'gray'}
+            onClick={() => setSelectedPositions([])}
             size="sm"
           >
             All
@@ -346,8 +359,16 @@ export default function RankingsTable() {
         {positions.map((position) => (
           <WrapItem key={position}>
             <Button
-              colorScheme={selectedPosition === position ? 'teal' : 'gray'}
-              onClick={() => setSelectedPosition(position)}
+              colorScheme={
+                selectedPositions.includes(position) ? 'green' : 'gray'
+              }
+              onClick={() =>
+                setSelectedPositions((prev) =>
+                  prev.includes(position)
+                    ? prev.filter((p) => p !== position)
+                    : [...prev, position],
+                )
+              }
               size="sm"
             >
               {position}
@@ -357,7 +378,7 @@ export default function RankingsTable() {
       </Wrap>
 
       <TableContainer>
-        <Table variant="striped" colorScheme="teal">
+        <Table variant="simple">
           <Thead>
             <Tr>
               <Th>Rank</Th>
@@ -374,7 +395,12 @@ export default function RankingsTable() {
           </Thead>
           <Tbody>
             {players.map((player, index) => (
-              <Tr key={player._id}>
+              <Tr
+                key={player._id}
+                onClick={() => onPlayerClick(player)}
+                cursor="pointer"
+                _hover={{ bg: 'green.100' }}
+              >
                 <Td>{index + 1}</Td>
                 <Td>{player.name}</Td>
                 <Td>{player.team}</Td>

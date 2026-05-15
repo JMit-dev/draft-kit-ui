@@ -1,13 +1,15 @@
 'use client';
 
-import { Box, Flex, Input, Text } from '@chakra-ui/react';
+import { Box, Flex } from '@chakra-ui/react';
 import type {
   DraftPick,
   LeagueTeam,
   RosterSlots,
   TakenPlayer,
 } from '@/features/Leagues/types/leagues.types';
+import type { Player as NotebookPlayer } from '@/features/Notebook/types/notebook.types';
 import DraftBoard from './DraftBoard';
+import ValuationSearch from './ValuationSearch';
 
 type DraftMiddlePanelProps = {
   teams?: LeagueTeam[];
@@ -20,6 +22,7 @@ type DraftMiddlePanelProps = {
   onPickEntered?: (pick: DraftPick, takenEntry: TakenPlayer) => void;
   onUndo?: () => void;
   onFinishDraft?: (name: string) => void | Promise<void>;
+  onValuationPlayerClick?: (player: NotebookPlayer) => void;
   readOnly?: boolean;
 };
 
@@ -34,6 +37,7 @@ export default function DraftMiddlePanel({
   onPickEntered,
   onUndo,
   onFinishDraft,
+  onValuationPlayerClick,
   readOnly = false,
 }: DraftMiddlePanelProps) {
   return (
@@ -58,12 +62,9 @@ export default function DraftMiddlePanel({
           readOnly={readOnly}
         />
       </Box>
-      <Flex flex="1" direction="column" gap={3} p={4}>
-        <Text color="gray.400" fontSize="sm">
-          Users will query API using search bar
-        </Text>
-        <Input placeholder="Search..." size="sm" />
-      </Flex>
+      <Box flex="1" overflow="hidden" p={4}>
+        <ValuationSearch onPlayerClick={onValuationPlayerClick} />
+      </Box>
     </Flex>
   );
 }
