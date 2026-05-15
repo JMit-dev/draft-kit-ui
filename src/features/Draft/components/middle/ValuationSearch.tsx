@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Button,
+  Flex,
   Icon,
   IconButton,
   Input,
@@ -53,7 +54,7 @@ export default function ValuationSearch({
 }: ValuationSearchProps) {
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [positions, setPositions] = useState<string[]>([]);
-  const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
@@ -124,7 +125,8 @@ export default function ValuationSearch({
       const matchesSearch =
         !normalized || p.name.toLowerCase().includes(normalized);
       const matchesPosition =
-        !selectedPosition || p.positions.includes(selectedPosition);
+        selectedPositions.length === 0 ||
+        selectedPositions.some((pos) => p.positions.includes(pos));
       return matchesSearch && matchesPosition;
     });
 
@@ -146,7 +148,7 @@ export default function ValuationSearch({
     }
 
     return filtered.slice(0, 50);
-  }, [searchTerm, selectedPosition, sortKey, sortDir, allPlayers, valuations]);
+  }, [searchTerm, selectedPositions, sortKey, sortDir, allPlayers, valuations]);
 
   function handleHeaderClick(key: SortKey) {
     if (sortKey !== key) {
@@ -187,51 +189,61 @@ export default function ValuationSearch({
 
   return (
     <Box display="flex" flexDirection="column" h="100%" overflow="hidden">
-      <InputGroup size="sm" mb={2} flexShrink={0}>
-        <Input
-          placeholder="Search player..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <InputRightElement>
-          <IconButton
-            aria-label="Search"
-            icon={
-              <Icon viewBox="0 0 24 24">
-                <path
-                  d="M10.5 3a7.5 7.5 0 1 0 4.73 13.32l4.22 4.21 1.06-1.06-4.21-4.22A7.5 7.5 0 0 0 10.5 3Zm0 1.5a6 6 0 1 1 0 12 6 6 0 0 1 0-12Z"
-                  fill="currentColor"
-                />
-              </Icon>
-            }
-            size="xs"
-            variant="ghost"
+      <Flex gap={2} mb={2} align="center" flexShrink={0}>
+        <InputGroup size="sm" flex="1">
+          <Input
+            placeholder="Search player..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
-        </InputRightElement>
-      </InputGroup>
+          <InputRightElement>
+            <IconButton
+              aria-label="Search"
+              icon={
+                <Icon viewBox="0 0 24 24">
+                  <path
+                    d="M10.5 3a7.5 7.5 0 1 0 4.73 13.32l4.22 4.21 1.06-1.06-4.21-4.22A7.5 7.5 0 0 0 10.5 3Zm0 1.5a6 6 0 1 1 0 12 6 6 0 0 1 0-12Z"
+                    fill="currentColor"
+                  />
+                </Icon>
+              }
+              size="xs"
+              variant="ghost"
+            />
+          </InputRightElement>
+        </InputGroup>
 
-      <Wrap mb={2} spacing={1} flexShrink={0}>
-        <WrapItem>
-          <Button
-            colorScheme={selectedPosition === null ? 'green' : 'gray'}
-            onClick={() => setSelectedPosition(null)}
-            size="xs"
-          >
-            All
-          </Button>
-        </WrapItem>
-        {positions.map((position) => (
-          <WrapItem key={position}>
+        <Wrap spacing={1}>
+          <WrapItem>
             <Button
-              colorScheme={selectedPosition === position ? 'green' : 'gray'}
-              onClick={() => setSelectedPosition(position)}
+              colorScheme={selectedPositions.length === 0 ? 'green' : 'gray'}
+              onClick={() => setSelectedPositions([])}
               size="xs"
             >
-              {position}
+              All
             </Button>
           </WrapItem>
-        ))}
-      </Wrap>
+          {positions.map((position) => (
+            <WrapItem key={position}>
+              <Button
+                colorScheme={
+                  selectedPositions.includes(position) ? 'green' : 'gray'
+                }
+                onClick={() =>
+                  setSelectedPositions((prev) =>
+                    prev.includes(position)
+                      ? prev.filter((p) => p !== position)
+                      : [...prev, position],
+                  )
+                }
+                size="xs"
+              >
+                {position}
+              </Button>
+            </WrapItem>
+          ))}
+        </Wrap>
+      </Flex>
 
       <TableContainer overflowY="auto" flex="1">
         <Table size="sm" variant="simple">

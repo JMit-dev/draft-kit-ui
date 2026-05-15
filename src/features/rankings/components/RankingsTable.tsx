@@ -82,7 +82,7 @@ export default function RankingsTable({
   const [teams, setTeams] = useState<string[]>([]);
   const [leagues, setLeagues] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
-  const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [selectedLeagues, setSelectedLeagues] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -178,7 +178,8 @@ export default function RankingsTable({
 
     const filteredPlayers = allPlayers.filter((player) => {
       const matchesPosition =
-        !selectedPosition || player.positions.includes(selectedPosition);
+        selectedPositions.length === 0 ||
+        selectedPositions.some((pos) => player.positions.includes(pos));
       const matchesSearch =
         !normalizedSearch ||
         player.name.toLowerCase().includes(normalizedSearch);
@@ -210,7 +211,7 @@ export default function RankingsTable({
     allPlayers,
     appliedSearch,
     selectedLeagues,
-    selectedPosition,
+    selectedPositions,
     selectedStatuses,
     selectedDepthStatuses,
     selectedTeams,
@@ -348,8 +349,8 @@ export default function RankingsTable({
       <Wrap mb={4} spacing={2}>
         <WrapItem>
           <Button
-            colorScheme={selectedPosition === null ? 'green' : 'gray'}
-            onClick={() => setSelectedPosition(null)}
+            colorScheme={selectedPositions.length === 0 ? 'green' : 'gray'}
+            onClick={() => setSelectedPositions([])}
             size="sm"
           >
             All
@@ -358,8 +359,16 @@ export default function RankingsTable({
         {positions.map((position) => (
           <WrapItem key={position}>
             <Button
-              colorScheme={selectedPosition === position ? 'green' : 'gray'}
-              onClick={() => setSelectedPosition(position)}
+              colorScheme={
+                selectedPositions.includes(position) ? 'green' : 'gray'
+              }
+              onClick={() =>
+                setSelectedPositions((prev) =>
+                  prev.includes(position)
+                    ? prev.filter((p) => p !== position)
+                    : [...prev, position],
+                )
+              }
               size="sm"
             >
               {position}
