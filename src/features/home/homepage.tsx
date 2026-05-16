@@ -11,10 +11,10 @@ const features = [
     href: '/draft',
   },
   {
-    title: 'Player Scouting',
+    title: 'Player Rankings',
     description:
-      'Explore player stats and projections to inform your draft strategy',
-    buttonText: 'Scout Players',
+      'View player rankings to inform your draft strategy and decisions',
+    buttonText: 'View Rankings',
     href: '/rankings',
   },
   {
