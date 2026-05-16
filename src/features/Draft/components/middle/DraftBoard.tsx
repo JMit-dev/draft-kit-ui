@@ -350,6 +350,7 @@ export default function DraftBoard({
                     </Button>
                     <Button
                       size="sm"
+                      colorScheme="red"
                       variant="outline"
                       isDisabled={displayedDraftPicks.length === 0}
                       onClick={onUndo}
@@ -360,6 +361,7 @@ export default function DraftBoard({
                   <Button
                     size="sm"
                     variant="outline"
+                    colorScheme="blue"
                     onClick={finishDraftDialog.onOpen}
                     isDisabled={displayedDraftPicks.length === 0}
                   >
