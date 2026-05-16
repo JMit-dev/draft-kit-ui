@@ -543,7 +543,7 @@ export default function LeagueTeamTable({
                               : 'Search players...'
                           }
                           listId={`player-options-${row.rowId}`}
-                          width="160px"
+                          width="130px"
                         />
                       </Td>
                       <Td>{row.team || '-'}</Td>
