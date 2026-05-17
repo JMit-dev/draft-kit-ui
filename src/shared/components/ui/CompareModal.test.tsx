@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   isLowerBetter,
   getOrdinal,
-  getFakeProjection,
   getRank,
   getStatColors,
   BATTING_LOWER_IS_BETTER,
@@ -73,31 +72,6 @@ describe('getOrdinal', () => {
     expect(getOrdinal(111)).toBe('111th');
     expect(getOrdinal(112)).toBe('112th');
     expect(getOrdinal(113)).toBe('113th');
-  });
-});
-
-describe('getFakeProjection', () => {
-  it('always returns a positive integer', () => {
-    for (let t = 0; t < 12; t++) {
-      for (let s = 0; s < 15; s++) {
-        const val = getFakeProjection(t, s);
-        expect(val).toBeGreaterThan(0);
-        expect(Number.isInteger(val)).toBe(true);
-      }
-    }
-  });
-
-  it('produces different values for different team/stat combinations', () => {
-    const values = new Set(
-      Array.from({ length: 12 }, (_, t) =>
-        Array.from({ length: 10 }, (_, s) => getFakeProjection(t, s)),
-      ).flat(),
-    );
-    expect(values.size).toBeGreaterThan(1);
-  });
-
-  it('is deterministic', () => {
-    expect(getFakeProjection(3, 5)).toBe(getFakeProjection(3, 5));
   });
 });
 

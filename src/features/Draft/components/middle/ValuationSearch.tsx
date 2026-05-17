@@ -76,8 +76,8 @@ export default function ValuationSearch({
         if (sortKey === 'value') {
           const valA = valuations[a._id] ?? -Infinity;
           const valB = valuations[b._id] ?? -Infinity;
-          const cmp = sortDir === 'asc' ? valA - valB : valB - valA;
-          if (cmp !== 0) return cmp;
+          if (valA !== valB)
+            return sortDir === 'asc' ? valA - valB : valB - valA;
 
           // Stable fallback when values are equal/undefined: last name sorting
           const lastA = a.name.split(' ').pop() ?? '';
