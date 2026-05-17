@@ -6,6 +6,7 @@ import { CacheProvider } from '@emotion/react';
 import { useEmotionCache } from '@chakra-ui/next-js/use-emotion-cache';
 import { queryClient } from '@/lib/react-query';
 import { UserSessionProvider } from '@/features/UserSession/user-session-provider';
+import { NotificationCenterProvider } from '@/shared/components/notifications/notification-center-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const emotionCache = useEmotionCache();
@@ -14,7 +15,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <CacheProvider value={emotionCache}>
       <ChakraProvider>
         <QueryClientProvider client={queryClient}>
-          <UserSessionProvider>{children}</UserSessionProvider>
+          <UserSessionProvider>
+            <NotificationCenterProvider>{children}</NotificationCenterProvider>
+          </UserSessionProvider>
         </QueryClientProvider>
       </ChakraProvider>
     </CacheProvider>

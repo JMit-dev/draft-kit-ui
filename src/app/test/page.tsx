@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { Box, Button, Code, Heading, Stack, Text } from '@chakra-ui/react';
 import { buildLeagueDraftRosterJson } from '@/features/Draft/utils/buildLeagueDraftRosterJson';
 import type { League } from '@/features/Leagues/types/leagues.types';
-import AlertWidget from '@/shared/components/ui/AlertWidget';
 import { externalApiClient, localApiClient } from '@/shared/utils/api-client';
+import { useNotificationCenter } from '@/shared/hooks/useNotificationCenter';
 import type { Player } from '@/shared/hooks/usePlayers';
 
 const backendExample = `{
@@ -47,15 +47,28 @@ type PlayersResponse = {
   };
 };
 
+type NotificationPushResponse = {
+  success: boolean;
+  data?: {
+    pushed: boolean;
+    clients: number;
+    type: string;
+  };
+  message?: string;
+};
+
 export default function TestPage() {
   const [showBackendLocation, setShowBackendLocation] = useState(false);
-  const [showAlertWidget, setShowAlertWidget] = useState(false);
+  const [notificationError, setNotificationError] = useState<string | null>(
+    null,
+  );
   const [mongoData, setMongoData] = useState<MongoLeagueData | null>(null);
   const [isLoadingMongoData, setIsLoadingMongoData] = useState(false);
   const [mongoDataError, setMongoDataError] = useState<string | null>(null);
   const [rosterJson, setRosterJson] = useState<unknown>(null);
   const [isLoadingRosterJson, setIsLoadingRosterJson] = useState(false);
   const [rosterJsonError, setRosterJsonError] = useState<string | null>(null);
+  const { status, lastEvent } = useNotificationCenter();
 
   async function loadBackendLeagueDocuments() {
     const response = await localApiClient.get<LeaguesResponse>(
@@ -162,6 +175,35 @@ export default function TestPage() {
     }
   }
 
+  async function handleSendTestNotification() {
+    try {
+      setNotificationError(null);
+
+      const response = await externalApiClient.post<NotificationPushResponse>(
+        '/api/notifications/push',
+        {
+          type: 'injury-update',
+          message: 'Fake Player is now injured',
+          data: {
+            player: 'Fake Player',
+            status: 'injured',
+            source: 'test-page',
+          },
+        },
+      );
+
+      if (!response.success) {
+        setNotificationError(
+          response.message ?? 'Failed to push notification.',
+        );
+      }
+    } catch (error) {
+      setNotificationError(
+        error instanceof Error ? error.message : 'Failed to push notification.',
+      );
+    }
+  }
+
   return (
     <Box maxW="900px" mx="auto" px={6} py={10}>
       <Stack spacing={5}>
@@ -183,18 +225,35 @@ export default function TestPage() {
 
         <Button
           alignSelf="flex-start"
-          colorScheme="orange"
-          onClick={() => setShowAlertWidget(true)}
+          colorScheme="pink"
+          onClick={handleSendTestNotification}
         >
-          Open Alert Widget
+          Send Test Notification
         </Button>
 
-        <AlertWidget
-          isOpen={showAlertWidget}
-          onClose={() => setShowAlertWidget(false)}
-          category="Test Alert"
-          description="This is the reusable shared alert widget preview."
-        />
+        <Stack
+          spacing={3}
+          borderWidth="1px"
+          borderRadius="md"
+          p={4}
+          bg="gray.50"
+        >
+          <Text fontWeight="semibold">Notification Stream</Text>
+          <Text color="gray.600">
+            Status: <Code>{status}</Code>
+          </Text>
+          {lastEvent ? (
+            <Text color="gray.600">
+              Last event:{' '}
+              <Code>{`${lastEvent.type}: ${lastEvent.message} @ ${lastEvent.timestamp}`}</Code>
+            </Text>
+          ) : (
+            <Text color="gray.500">No notification has been received yet.</Text>
+          )}
+          {notificationError ? (
+            <Text color="red.500">{notificationError}</Text>
+          ) : null}
+        </Stack>
 
         {showBackendLocation ? (
           <Stack
