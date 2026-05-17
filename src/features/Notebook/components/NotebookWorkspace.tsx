@@ -271,11 +271,13 @@ export default function NotebookWorkspace({
                 {/* Top-left: Player info */}
                 <Box
                   borderWidth="1px"
-                  borderColor="gray.200"
+                  borderColor="green.200"
                   borderRadius="md"
-                  bg="gray.50"
+                  bg="white"
                   p={3}
                   overflow="hidden"
+                  boxShadow="sm"
+                  _hover={{ borderColor: 'green.400' }}
                 >
                   <Flex align="center" justify="space-between" gap={3} mb={2}>
                     <Text fontSize="sm" fontWeight="semibold" color="gray.700">
@@ -318,19 +320,21 @@ export default function NotebookWorkspace({
                 {/* Top-right: Real stats */}
                 <Box
                   borderWidth="1px"
-                  borderColor="gray.200"
+                  borderColor="green.200"
                   borderRadius="md"
                   overflow="hidden"
                   minH="0"
+                  boxShadow="sm"
+                  _hover={{ borderColor: 'green.400' }}
                 >
                   <Flex
                     px={3}
                     py={2}
-                    bg="gray.50"
+                    bg="green.50"
                     borderBottomWidth={
                       selectedPlayer?.stats?.length ? '1px' : undefined
                     }
-                    borderColor="gray.200"
+                    borderColor="green.200"
                     align="center"
                   >
                     <Text
@@ -349,11 +353,31 @@ export default function NotebookWorkspace({
                         String(b.season).localeCompare(String(a.season)),
                       );
 
+                      const playerType =
+                        selectedPlayer?.playerType === 'pitcher'
+                          ? 'pitcher'
+                          : 'hitter';
+
                       const statKeys = Array.from(
                         new Set(
                           seasons.flatMap((s) => Object.keys(s.data ?? {})),
                         ),
                       ).sort();
+
+                      if (playerType === 'pitcher') {
+                        const withoutWinsLosses = statKeys.filter(
+                          (k) => k !== 'wins' && k !== 'losses',
+                        );
+                        if (statKeys.includes('wins'))
+                          withoutWinsLosses.push('wins');
+                        if (statKeys.includes('losses'))
+                          withoutWinsLosses.push('losses');
+                        statKeys.splice(
+                          0,
+                          statKeys.length,
+                          ...withoutWinsLosses,
+                        );
+                      }
 
                       const headerLabel = (key: string) => key.toUpperCase();
 
@@ -413,16 +437,18 @@ export default function NotebookWorkspace({
                 {/* Bottom-left: Projections (placeholder) */}
                 <Box
                   borderWidth="1px"
-                  borderColor="gray.200"
+                  borderColor="green.200"
                   borderRadius="md"
                   overflow="hidden"
+                  boxShadow="sm"
+                  _hover={{ borderColor: 'green.400' }}
                 >
                   <Flex
                     px={3}
                     py={2}
-                    bg="gray.50"
+                    bg="green.50"
                     borderBottomWidth="1px"
-                    borderColor="gray.200"
+                    borderColor="green.200"
                     align="center"
                   >
                     <Text
@@ -479,14 +505,56 @@ export default function NotebookWorkspace({
                               ? keysFromRealStats
                               : fallbackKeys;
 
+                          const summed: Record<string, number> = {};
+                          const counts: Record<string, number> = {};
+
+                          for (const season of relevantStats) {
+                            for (const [key, value] of Object.entries(
+                              season.data ?? {},
+                            )) {
+                              if (typeof value !== 'number') continue;
+                              summed[key] = (summed[key] ?? 0) + value;
+                              counts[key] = (counts[key] ?? 0) + 1;
+                            }
+                          }
+
+                          const averaged: Record<string, number> =
+                            Object.fromEntries(
+                              Object.keys(summed).map((k) => [
+                                k,
+                                summed[k] / (counts[k] || 1),
+                              ]),
+                            );
+
+                          const formatProjectionValue = (
+                            key: string,
+                            value: number,
+                          ): string => {
+                            const lower = key.toLowerCase();
+                            if (lower === 'ba' || lower === 'avg') {
+                              return value.toFixed(3);
+                            }
+                            if (lower === 'era') {
+                              return value.toFixed(2);
+                            }
+                            if (lower === 'innings') {
+                              return value.toFixed(1);
+                            }
+                            return Number.isInteger(value)
+                              ? String(value)
+                              : value.toFixed(2);
+                          };
+
                           const headerLabel = (key: string) =>
                             key.toUpperCase();
 
                           return projectionKeys.map((key) => (
                             <Tr key={key}>
                               <Td>{headerLabel(key)}</Td>
-                              <Td isNumeric color="gray.400">
-                                -
+                              <Td isNumeric>
+                                {averaged[key] !== undefined
+                                  ? formatProjectionValue(key, averaged[key])
+                                  : '-'}
                               </Td>
                             </Tr>
                           ));
@@ -511,6 +579,8 @@ export default function NotebookWorkspace({
                   }
                   placeholder="Write notes here..."
                   focusBorderColor="green.400"
+                  borderColor="green.200"
+                  _hover={{ borderColor: 'green.400' }}
                 />
               </Box>
             ) : null}
